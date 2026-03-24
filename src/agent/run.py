@@ -12,9 +12,10 @@ agent = create_deep_agent(
     system_prompt=conf.SYSTEM_PROMPT,
     backend=conf.BACKEND,
     skills=[conf.SKILL_DIR],
+    tools=conf.AGENT_TOOLS,
 )
 
 if __name__ == "__main__":
-    state = agent.invoke({"messages":"hello,秘密是什么？"})
+    state = agent.invoke({"messages":"查一下我的仓位0x802f71cBf691D4623374E8ec37e32e26d5f74d87，我能开多一笔ETH的空单吗"})
     for m in state["messages"]:
         m.pretty_print()
