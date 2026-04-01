@@ -13,6 +13,14 @@
 
 from .decode_jwt import get_userid, get_jwt_expired_time, get_userid_and_expired_time
 from .get_onchain_assets import get_wallet_portfolio, get_native_balance
+from .types import (  # noqa: E402, F401
+    JwtDecodeResponse,
+    NetworkBreakdown,
+    Asset,
+    WalletPortfolioResponse,
+    NativeBalanceResponse,
+    SupportedNetwork,
+)
 
 __all__ = [
     # JWT 解析
@@ -22,4 +30,11 @@ __all__ = [
     # 链上资产
     "get_wallet_portfolio",
     "get_native_balance",
+    # 类型定义
+    "JwtDecodeResponse",
+    "NetworkBreakdown",
+    "Asset",
+    "WalletPortfolioResponse",
+    "NativeBalanceResponse",
+    "SupportedNetwork",
 ]

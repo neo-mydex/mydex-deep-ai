@@ -55,6 +55,30 @@ from .check_can_close import (
     check_can_close,
 )
 
+# 类型定义
+from .types import (  # noqa: E402, F401
+    Network,
+    Side,
+    MarginMode,
+    OrderType,
+    MarketPriceResponse,
+    PerpMarketInfoResponse,
+    CoinInfoResponse,
+    Position,
+    UserPositionsResponse,
+    UserPositionResponse,
+    AccountBalanceResponse,
+    Order,
+    UserOpenOrdersResponse,
+    CheckCanOpenRequest,
+    LeverageValidation,
+    EntryPriceEvaluation,
+    CheckCanOpenResponse,
+    CheckCanCloseRequest,
+    PositionInfo,
+    CheckCanCloseResponse,
+)
+
 __all__ = [
     # 市场数据
     "get_all_mids",
@@ -79,4 +103,25 @@ __all__ = [
     "check_can_open",
     # 平仓检查
     "check_can_close",
+    # 类型定义
+    "Network",
+    "Side",
+    "MarginMode",
+    "OrderType",
+    "MarketPriceResponse",
+    "PerpMarketInfoResponse",
+    "CoinInfoResponse",
+    "Position",
+    "UserPositionsResponse",
+    "UserPositionResponse",
+    "AccountBalanceResponse",
+    "Order",
+    "UserOpenOrdersResponse",
+    "CheckCanOpenRequest",
+    "LeverageValidation",
+    "EntryPriceEvaluation",
+    "CheckCanOpenResponse",
+    "CheckCanCloseRequest",
+    "PositionInfo",
+    "CheckCanCloseResponse",
 ]

@@ -20,9 +20,25 @@ from .coingecko import (
     get_trending_coins,
 )
 
+from .types import (  # noqa: E402, F401
+    CoinPriceResponse,
+    CoinInfoResponse,
+    CoinCandidate,
+    SearchCoinsResponse,
+    TrendingCoin,
+    TrendingCoinsResponse,
+)
+
 __all__ = [
     "get_coin_price",
     "get_coin_info",
     "search_coins",
     "get_trending_coins",
+    # 类型定义
+    "CoinPriceResponse",
+    "CoinInfoResponse",
+    "CoinCandidate",
+    "SearchCoinsResponse",
+    "TrendingCoin",
+    "TrendingCoinsResponse",
 ]
