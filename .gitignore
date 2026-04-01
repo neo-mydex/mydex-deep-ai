@@ -27,6 +27,7 @@ wheels/
 
 # Virtual environments
 .venv/
+.uv*
 venv/
 ENV/
 
@@ -48,3 +49,7 @@ logs/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# code agent
+.claude
+CLAUDE.md
