@@ -12,6 +12,7 @@ dependencies = [
     "langchain-google>=0.1.1",
     "langchain-openai>=1.1.11",
     "pydantic>=2.12.5",
+    "rich>=14.3.3",
     "sse-starlette>=2.1.0",
     "uvicorn>=0.30.0",
 ]
