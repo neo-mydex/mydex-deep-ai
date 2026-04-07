@@ -5,6 +5,11 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
+try:
+    from langchain.tools import tool
+except Exception:
+    from langchain_core.tools import tool
+
 
 def _decode_jwt_payload(jwt: str) -> dict[str, Any]:
     parts = jwt.split(".")
@@ -27,6 +32,7 @@ def _decode_jwt_payload(jwt: str) -> dict[str, Any]:
     return payload
 
 
+@tool
 def get_userid(jwt: str) -> str:
     """Return user id from JWT `sub` claim."""
     payload = _decode_jwt_payload(jwt)
@@ -36,6 +42,7 @@ def get_userid(jwt: str) -> str:
     return user_id
 
 
+@tool
 def get_jwt_expired_time(jwt: str) -> datetime:
     """Return JWT expiration time in UTC from `exp` claim."""
     payload = _decode_jwt_payload(jwt)
@@ -51,6 +58,7 @@ def get_jwt_expired_time(jwt: str) -> datetime:
     return datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
 
 
+@tool
 def get_userid_and_expired_time(jwt: str) -> dict[str, Any]:
     """Convenience helper for agent/tool orchestration."""
     expire_dt = get_jwt_expired_time(jwt)
