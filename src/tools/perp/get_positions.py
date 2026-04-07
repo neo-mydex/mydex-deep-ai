@@ -136,7 +136,7 @@ def perp_get_position(
 
 
 if __name__ == "__main__":
-    from pprint import pprint
+    from rich import print
     addr = "0x1234567890abcdef1234567890abcdef12345678"
-    pprint(perp_get_positions_impl(address=addr))
-    pprint(perp_get_position_impl(address=addr, coin="BTC"))
+    print(perp_get_positions_impl(address=addr))
+    print(perp_get_position_impl(address=addr, coin="BTC"))

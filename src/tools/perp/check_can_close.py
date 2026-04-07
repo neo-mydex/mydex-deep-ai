@@ -91,5 +91,5 @@ def perp_check_can_close(
 
 
 if __name__ == "__main__":
-    from pprint import pprint
-    pprint(perp_check_can_close_impl(address="0x1234567890abcdef1234567890abcdef12345678", coin="BTC"))
+    from rich import print
+    print(perp_check_can_close_impl(address="0x1234567890abcdef1234567890abcdef12345678", coin="BTC"))

@@ -1,35 +1,41 @@
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from deepagents import create_deep_agent
-import src.config as conf
+from src.config.agent_backend import BACKEND, SKILL_DIR
+from src.config.agent_context import ChatContext
+from src.config.agent_llms import GPT_54
+from src.config.agent_prompts import SYSTEM_PROMPT
+from src.config.agent_tools import AGENT_TOOLS
 
 
 agent = create_deep_agent(
-    model=conf.GPT_54,                   # 使用的LLM
-    system_prompt=conf.SYSTEM_PROMPT,    # 系统提示词
-    backend=conf.BACKEND,                # 后端，skill要用
-    skills=[conf.SKILL_DIR],             # skill在后端的位置
-    tools=conf.AGENT_TOOLS,              # 可用工具
-    context_schema=conf.ChatContext,     # 运行时上下文（用户身份等）
+    model=GPT_54,
+    system_prompt=SYSTEM_PROMPT,
+    backend=BACKEND,
+    skills=[SKILL_DIR],
+    tools=AGENT_TOOLS,
+    context_schema=ChatContext,
 )
 
 if __name__ == "__main__":
+    context = ChatContext.from_jwt(os.environ.get("JWT", ""))
     state = agent.invoke(
         {
             "messages": [
                 {
                     "role": "user",
-                    "content": "查一下BTC价格",
+                    "content": "我的sol钱包地址是？",
                 }
             ]
         },
-        context=conf.ChatContext(
-            context="用户钱包地址: 0x802f71cBf691D4623374E8ec37e32e26d5f74d87",
-            # jwt="<privy_jwt_here>",  # 登录场景可传
-        ),
+        context=context,
     )
     for m in state["messages"]:
         m.pretty_print()

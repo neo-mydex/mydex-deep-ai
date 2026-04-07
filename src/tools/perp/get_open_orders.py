@@ -80,5 +80,5 @@ def perp_get_open_orders(
 
 
 if __name__ == "__main__":
-    from pprint import pprint
-    pprint(perp_get_open_orders_impl(address="0x1234567890abcdef1234567890abcdef12345678"))
+    from rich import print
+    print(perp_get_open_orders_impl(address="0x1234567890abcdef1234567890abcdef12345678"))

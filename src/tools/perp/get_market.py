@@ -105,6 +105,6 @@ def perp_get_coin_info(
 
 
 if __name__ == "__main__":
-    from pprint import pprint
-    pprint(perp_get_market_price_impl(coin="BTC"))
-    pprint(perp_get_coin_info_impl(coin="BTC"))
+    from rich import print
+    print(perp_get_market_price_impl(coin="BTC"))
+    print(perp_get_coin_info_impl(coin="BTC"))

@@ -32,5 +32,5 @@ def coin_get_price(coin: str, vs: str = "usd") -> CoinPriceResponse:
 
 
 if __name__ == "__main__":
-    from pprint import pprint
-    pprint(coin_get_price_impl(coin="BTC"))
+    from rich import print
+    print(coin_get_price_impl(coin="BTC"))

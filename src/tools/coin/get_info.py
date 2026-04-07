@@ -37,5 +37,5 @@ def coin_get_info(coin: str) -> CoinInfoResponse:
 
 
 if __name__ == "__main__":
-    from pprint import pprint
-    pprint(coin_get_info_impl(coin="BTC"))
+    from rich import print
+    print(coin_get_info_impl(coin="BTC"))

@@ -3,7 +3,7 @@
 """
 
 import pytest
-from src.tools.perp._normalize_intent import (
+from src.services.hyperliquid.normalize import (
     normalize_side,
     normalize_order_type,
     normalize_coin,

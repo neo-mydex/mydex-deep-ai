@@ -38,5 +38,5 @@ def coin_search(query: str) -> SearchCoinsResponse:
 
 
 if __name__ == "__main__":
-    from pprint import pprint
-    pprint(coin_search_impl(query="BTC"))
+    from rich import print
+    print(coin_search_impl(query="ETH"))

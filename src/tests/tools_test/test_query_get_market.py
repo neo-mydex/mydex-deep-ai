@@ -16,7 +16,7 @@ class TestGetMarket:
 
     def test_normalize_coin(self):
         """测试币种名称标准化"""
-        from src.tools.perp._normalize_intent import normalize_coin
+        from src.services.hyperliquid.normalize import normalize_coin
 
         assert normalize_coin("btc") == "BTC"
         assert normalize_coin("BTC") == "BTC"

@@ -6,7 +6,7 @@ from deepagents.backends import (
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-SKILLS_ROOT = PROJECT_ROOT / "skills"
+SKILLS_ROOT = PROJECT_ROOT / "src" / "skills"
 SKILL_DIR = "/skills"
 
 # 表示Agent只能看到"/skills"这个目录

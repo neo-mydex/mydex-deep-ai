@@ -28,5 +28,5 @@ def coin_get_trending() -> TrendingCoinsResponse:
 
 
 if __name__ == "__main__":
-    from pprint import pprint
-    pprint(coin_get_trending_impl())
+    from rich import print
+    print(coin_get_trending_impl())

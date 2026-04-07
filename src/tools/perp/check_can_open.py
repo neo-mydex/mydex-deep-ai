@@ -116,6 +116,6 @@ def perp_check_can_open(
 
 
 if __name__ == "__main__":
-    from pprint import pprint
+    from rich import print
     addr = "0x1234567890abcdef1234567890abcdef12345678"
-    pprint(perp_check_can_open_impl(address=addr, coin="BTC", side="long", size=0.01, leverage=10))
+    print(perp_check_can_open_impl(address=addr, coin="BTC", side="long", size=0.01, leverage=10))

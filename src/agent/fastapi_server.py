@@ -68,7 +68,7 @@ def make_sse_event(event_type: str, data: Any) -> str:
 async def event_stream(
     session_id: str,
     message: str,
-    raw_context: str,
+    raw_context: Any,
     jwt: str,
 ) -> AsyncIterator[dict]:
     """生成 SSE 事件流"""
@@ -86,17 +86,27 @@ async def event_stream(
         raise ValueError(f"context must be a dict, got {type(raw_context).__name__}: {raw_context}")
     context_dict = raw_context
 
-    # 3. 构造 ChatContext（JWT 验证在这里完成）
-    # context 对象的结构：{"jwt": "...", "other": {"evm_address": "..."}}
-    # other 字段需要序列化
+    # 3. 构造 ChatContext
+    # 优先使用请求里直接传入的上下文字段；缺失时再回退到 JWT 解析
     try:
-        other_json = json.dumps(context_dict.get("other", {}))
         chat_ctx = ChatContext(
-            jwt=context_dict.get("jwt", jwt) or jwt,
-            other=other_json,
+            user_id=str(context_dict.get("user_id") or "guest"),
+            is_expired=bool(context_dict.get("is_expired", False)),
+            evm_address=str(context_dict.get("evm_address") or ""),
+            sol_address=str(context_dict.get("sol_address") or ""),
         )
+
+        # 如果请求没有显式传身份和地址，则用 JWT 构造
+        if (
+            chat_ctx.user_id == "guest"
+            and not chat_ctx.is_expired
+            and not chat_ctx.evm_address
+            and not chat_ctx.sol_address
+        ):
+            token = str(context_dict.get("jwt") or jwt or "")
+            chat_ctx = ChatContext.from_jwt(token)
     except Exception:
-        chat_ctx = ChatContext(jwt=jwt, other="{}")
+        chat_ctx = ChatContext.from_jwt(jwt)
 
     # 4. 准备消息
     messages = [{"role": "user", "content": message}]
