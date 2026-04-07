@@ -6,7 +6,6 @@ from typing import Any, Literal
 
 Side = Literal["long", "short"]
 OrderType = Literal["market", "limit"]
-Network = Literal["mainnet", "testnet"]
 
 
 def normalize_side(side: str | None) -> Side | None:
@@ -133,20 +132,3 @@ def normalize_intent(intent: dict[str, Any]) -> dict[str, Any]:
         "missing_fields": missing_fields,
         "invalid_fields": invalid_fields,
     }
-
-
-if __name__ == "__main__":
-    import json
-
-    # 测试用例
-    test_cases = [
-        {"coin": "btc", "side": "LONG", "size": "0.01", "leverage": 50, "order_type": "market"},
-        {"coin": "ETH", "side": "short", "size": 1.5, "leverage": "20", "order_type": "limit", "entry_price": 3000},
-        {"side": "long"},  # 缺失 coin
-        {"coin": "BTC", "size": "0.01"},  # 缺失 side
-    ]
-
-    for i, intent in enumerate(test_cases):
-        result = normalize_intent(intent)
-        print(f"\n=== Test case {i+1} ===")
-        print(json.dumps(result, ensure_ascii=False, indent=2))

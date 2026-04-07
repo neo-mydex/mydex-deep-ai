@@ -48,9 +48,12 @@ Advanced Mode 示例:
 }
 """
 
-from typing import Any
+from typing import Any, Literal
 
-from .types import CardType, MarginMode, OrderType, TradeSide
+CardType = Literal["OPEN_LONG", "OPEN_SHORT", "CLOSE_POSITION", "SET_TPSL", "VIEW_POSITION", "UPDATE_LEVERAGE"]
+MarginMode = Literal["cross", "isolated"]
+OrderType = Literal["market", "limit"]
+TradeSide = Literal["buy", "sell"]
 
 
 def build_open_long_params(

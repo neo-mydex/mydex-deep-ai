@@ -1,20 +1,24 @@
 """
-CoinGecko 代币信息查询模块
+CoinGecko 代币信息查询 - 业务层
 
-支持通过代币符号、名称（模糊搜索）、合约地址查询代币信息
+对外暴露的函数:
+- get_coin_price: 获取代币价格
+- get_coin_info: 获取代币详细信息（市值、排名等）
+- search_coins: 搜索代币
+- get_trending_coins: 获取 trending 代币
 """
 
 from typing import Any
 
-from src.tools.coin._client import fetch_json, build_url, COINGECKO_API_BASE
-from src.tools.coin._normalize import (
+from .client import fetch_json, build_url, COINGECKO_API_BASE
+from .normalize import (
     symbol_to_id,
     is_contract_address,
     normalize_symbol,
     SYMBOL_TO_ID,
     NETWORK_TO_COINGECKO,
 )
-from src.tools.coin._fallback import rank_candidates
+from .fallback import rank_candidates
 
 
 # =============================================================================
@@ -152,8 +156,37 @@ def _resolve_coin_input(coin: str) -> dict[str, Any]:
     }
 
 
+def _fetch_platforms(coin_id: str) -> dict[str, str] | None:
+    """
+    获取代币在各链的合约地址（轻量级调用）
+
+    参数:
+        coin_id: CoinGecko 代币 ID
+
+    返回:
+        {network: contract_address, ...} 或 None
+    """
+    try:
+        # 只请求 platforms 信息，轻量级
+        url = build_url(
+            f"/coins/{coin_id}",
+            params={
+                "localization": "false",
+                "tickers": "false",
+                "market_data": "false",
+                "community_data": "false",
+                "developer_data": "false",
+                "sparkline": "false",
+            },
+        )
+        data = fetch_json(url)
+        return data.get("platforms") or {}
+    except Exception:
+        return None
+
+
 # =============================================================================
-# Agent 友好的标准化返回
+# 公开 API 函数
 # =============================================================================
 
 
@@ -333,35 +366,6 @@ def get_coin_info(
         }
 
 
-def _fetch_platforms(coin_id: str) -> dict[str, str] | None:
-    """
-    获取代币在各链的合约地址（轻量级调用）
-
-    参数:
-        coin_id: CoinGecko 代币 ID
-
-    返回:
-        {network: contract_address, ...} 或 None
-    """
-    try:
-        # 只请求 platforms 信息，轻量级
-        url = build_url(
-            f"/coins/{coin_id}",
-            params={
-                "localization": "false",
-                "tickers": "false",
-                "market_data": "false",
-                "community_data": "false",
-                "developer_data": "false",
-                "sparkline": "false",
-            },
-        )
-        data = fetch_json(url)
-        return data.get("platforms") or {}
-    except Exception:
-        return None
-
-
 def search_coins(
     query: str,
     limit: int = 5,
@@ -474,38 +478,3 @@ def get_trending_coins() -> dict[str, Any]:
             "source": "coingecko",
             "error": str(e),
         }
-
-
-# =============================================================================
-# CLI 入口
-# =============================================================================
-
-if __name__ == "__main__":
-    import argparse
-    import json
-
-    parser = argparse.ArgumentParser(description="CoinGecko 代币信息查询")
-    parser.add_argument("--action", choices=["price", "info", "search", "trending"], required=True)
-    parser.add_argument("--coin", default=None, help="代币符号、名称或合约地址")
-    parser.add_argument("--vs", default="usd", help="计价货币 (默认 usd)")
-    args = parser.parse_args()
-
-    if args.action == "price":
-        if not args.coin:
-            print("Error: --coin required for price action")
-            exit(1)
-        result = get_coin_price(coin=args.coin, vs=args.vs)
-    elif args.action == "info":
-        if not args.coin:
-            print("Error: --coin required for info action")
-            exit(1)
-        result = get_coin_info(coin=args.coin, vs=args.vs)
-    elif args.action == "search":
-        if not args.coin:
-            print("Error: --coin required for search action")
-            exit(1)
-        result = search_coins(query=args.coin)
-    elif args.action == "trending":
-        result = get_trending_coins()
-
-    print(json.dumps(result, ensure_ascii=False, indent=2))

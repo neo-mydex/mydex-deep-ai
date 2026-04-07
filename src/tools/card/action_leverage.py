@@ -33,9 +33,9 @@ Advanced Mode:
 }
 """
 
-from typing import Any
+from typing import Any, Literal
 
-from .types import MarginMode
+MarginMode = Literal["cross", "isolated"]
 
 
 def build_update_leverage_params(

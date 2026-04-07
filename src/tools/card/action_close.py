@@ -52,9 +52,9 @@ Advanced Mode（部分平仓）:
 }
 """
 
-from typing import Any
+from typing import Any, Literal
 
-from .types import PositionSide
+PositionSide = Literal["long", "short", "flat"]
 
 
 def build_close_position_params(

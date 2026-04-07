@@ -50,9 +50,9 @@ Advanced Mode:
 }
 """
 
-from typing import Any
+from typing import Any, Literal
 
-from .types import PositionSide
+PositionSide = Literal["long", "short", "flat"]
 
 
 def build_set_tpsl_params(
