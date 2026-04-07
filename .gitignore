@@ -53,3 +53,7 @@ htmlcov/
 # code agent
 .claude
 CLAUDE.md
+docs
+
+# langgraph dev
+.langgraph_api
