@@ -48,6 +48,17 @@ uv run python -m src.tools.user.decode_jwt
 uv run python -m src.tools.user.get_onchain_assets
 ```
 
+**工具列表：**
+
+| 工具 | 说明 |
+|------|------|
+| `user_get_userid` | 解析 JWT，返回 user_id + 过期时间 + 是否过期 |
+| `user_get_wallet_address` | 调用后端 API，返回 EVM 和 Solana 钱包地址 |
+| `wallet_get_assets` | 查询多链资产组合（仅 EVM 链） |
+| `wallet_get_native_balance` | 查询原生代币余额（ETH、MATIC、SOL 等） |
+
+> 注意：`wallet_get_assets` 仅支持 EVM 链（eth、base、arb、op、polygon、bnb、avax），不覆盖 Solana。
+
 ---
 
 ## Service 层：完整 CLI 调试
@@ -103,6 +114,15 @@ uv run python -m src.services.alchemy.cli portfolio --address 0x... --networks e
 uv run python -m src.services.alchemy.cli native-balance --address 0x... --network eth
 ```
 
+> 注意：Alchemy API 仅支持 EVM 链，不支持 Solana 资产查询。
+
+### Privy Service
+
+```bash
+# 获取用户资料（含钱包地址）
+uv run python -m src.services.privy.cli profile --jwt <token>
+```
+
 ---
 
 ## card 模块
@@ -144,3 +164,5 @@ from src.tools.card import (
 |------|------|
 | `COINGECKO_PRO_API_KEY` | CoinGecko Pro API 密钥（有付费密钥时自动使用 pro 接口） |
 | `ALCHEMY_API_KEY` | Alchemy API 密钥（用于查询链上资产） |
+| `MYDEX_API_BASE` | Mydex 后端 API 地址（默认 https://test.mydex.io） |
+| `JWT` | Privy JWT token（用于 CLI 调试 Privy 服务） |
