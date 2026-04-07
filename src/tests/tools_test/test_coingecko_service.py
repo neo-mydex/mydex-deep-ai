@@ -1,5 +1,5 @@
 """
-测试 coingecko service 层 (cli.py 中的业务函数)
+测试 coingecko service 层 (service.py 中的业务函数)
 
 直接测试 service 层的纯业务逻辑函数，使用 mock 隔离网络依赖。
 """
@@ -7,7 +7,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from src.services.coingecko.cli import (
+from src.services.coingecko.service import (
     get_coin_price,
     get_coin_info,
     search_coins,
@@ -18,9 +18,9 @@ from src.services.coingecko.cli import (
 class TestGetCoinPrice:
     """get_coin_price 测试"""
 
-    @patch("src.services.coingecko.cli.build_url")
-    @patch("src.services.coingecko.cli.fetch_json")
-    @patch("src.services.coingecko.cli._resolve_coin_input")
+    @patch("src.services.coingecko.service.build_url")
+    @patch("src.services.coingecko.service.fetch_json")
+    @patch("src.services.coingecko.service._resolve_coin_input")
     def test_returns_correct_structure(self, mock_resolve, mock_fetch_json, mock_build_url):
         """测试返回结构包含必要字段"""
         mock_resolve.return_value = {
@@ -51,7 +51,7 @@ class TestGetCoinPrice:
         assert result["change_24h"] == 2.5
         assert result["source"] == "coingecko"
 
-    @patch("src.services.coingecko.cli._resolve_coin_input")
+    @patch("src.services.coingecko.service._resolve_coin_input")
     def test_returns_false_for_unknown_coin(self, mock_resolve):
         """测试不存在的币返回 ok=False"""
         mock_resolve.return_value = {
@@ -73,9 +73,9 @@ class TestGetCoinPrice:
 class TestGetCoinInfo:
     """get_coin_info 测试"""
 
-    @patch("src.services.coingecko.cli.build_url")
-    @patch("src.services.coingecko.cli.fetch_json")
-    @patch("src.services.coingecko.cli._resolve_coin_input")
+    @patch("src.services.coingecko.service.build_url")
+    @patch("src.services.coingecko.service.fetch_json")
+    @patch("src.services.coingecko.service._resolve_coin_input")
     def test_returns_correct_structure(self, mock_resolve, mock_fetch_json, mock_build_url):
         """测试返回结构包含必要字段"""
         mock_resolve.return_value = {
@@ -120,7 +120,7 @@ class TestGetCoinInfo:
         assert result["price"] == 50000.0
         assert result["rank"] == 1
 
-    @patch("src.services.coingecko.cli._resolve_coin_input")
+    @patch("src.services.coingecko.service._resolve_coin_input")
     def test_returns_false_for_unknown_coin(self, mock_resolve):
         """测试不存在的币返回 ok=False"""
         mock_resolve.return_value = {
@@ -142,9 +142,9 @@ class TestGetCoinInfo:
 class TestSearchCoins:
     """search_coins 测试"""
 
-    @patch("src.services.coingecko.cli.build_url")
-    @patch("src.services.coingecko.cli.fetch_json")
-    @patch("src.services.coingecko.cli.is_contract_address")
+    @patch("src.services.coingecko.service.build_url")
+    @patch("src.services.coingecko.service.fetch_json")
+    @patch("src.services.coingecko.service.is_contract_address")
     def test_returns_correct_structure(self, mock_is_contract, mock_fetch_json, mock_build_url):
         """测试返回结构包含必要字段"""
         mock_is_contract.return_value = False
@@ -178,7 +178,7 @@ class TestSearchCoins:
         assert result["candidates"][0]["id"] == "bitcoin"
         assert result["candidates"][0]["symbol"] == "BTC"
 
-    @patch("src.services.coingecko.cli.is_contract_address")
+    @patch("src.services.coingecko.service.is_contract_address")
     def test_rejects_contract_address(self, mock_is_contract):
         """测试拒绝合约地址查询"""
         mock_is_contract.return_value = True
@@ -194,8 +194,8 @@ class TestSearchCoins:
 class TestGetTrendingCoins:
     """get_trending_coins 测试"""
 
-    @patch("src.services.coingecko.cli.build_url")
-    @patch("src.services.coingecko.cli.fetch_json")
+    @patch("src.services.coingecko.service.build_url")
+    @patch("src.services.coingecko.service.fetch_json")
     def test_returns_correct_structure(self, mock_fetch_json, mock_build_url):
         """测试返回结构包含必要字段"""
         mock_build_url.return_value = "https://api.coingecko.com/v3/search/trending"
@@ -215,8 +215,8 @@ class TestGetTrendingCoins:
         assert len(result["coins"]) == 2
         assert result["source"] == "coingecko"
 
-    @patch("src.services.coingecko.cli.build_url")
-    @patch("src.services.coingecko.cli.fetch_json")
+    @patch("src.services.coingecko.service.build_url")
+    @patch("src.services.coingecko.service.fetch_json")
     def test_handles_api_error(self, mock_fetch_json, mock_build_url):
         """测试处理 API 错误"""
         mock_build_url.return_value = "https://api.coingecko.com/v3/search/trending"
@@ -233,8 +233,8 @@ class TestCliMainImport:
     """测试 CLI 入口可以被导入"""
 
     def test_cli_main_can_be_imported(self):
-        """验证 __main__ 模块可以被正常导入"""
-        from src.services.coingecko import __main__
+        """验证 CLI 模块可以被正常导入"""
+        from src.services.coingecko import cli
 
-        assert hasattr(__main__, "main")
-        assert callable(__main__.main)
+        assert hasattr(cli, "main")
+        assert callable(cli.main)

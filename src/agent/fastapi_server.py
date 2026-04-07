@@ -196,6 +196,12 @@ async def chat_stream(
     message = body.get("message", "")
     # context 可以是 dict 对象（推荐）或 JSON 字符串（兼容）
     raw_context = body.get("context", {})
+    # 如果是字符串，尝试解析为 dict
+    if isinstance(raw_context, str):
+        try:
+            raw_context = json.loads(raw_context)
+        except json.JSONDecodeError:
+            raw_context = {}
     jwt_from_header = authorization[7:] if (authorization and authorization.startswith("Bearer ")) else ""
     # 请求体的 jwt 优先，其次是 header
     jwt = body.get("jwt", jwt_from_header or "")
