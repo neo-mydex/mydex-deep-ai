@@ -97,7 +97,17 @@ def _coin_id_from_contract_address(address: str) -> tuple[str, str] | None:
         (coin_id, network) 或 None
     """
     # EVM 网络优先级
-    evm_networks = ["ethereum", "base", "arbitrum-one", "optimistic-ethereum"]
+    evm_networks = [
+        "ethereum",
+        "binance-smart-chain",
+        "base",
+        "optimistic-ethereum",
+        "arbitrum-one",
+        "polygon-pos",
+        "monad",
+        "ink",
+        "hyperliquid",
+    ]
 
     for network in evm_networks:
         result = _fetch_token_by_contract(network, address)

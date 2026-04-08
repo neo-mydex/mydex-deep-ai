@@ -99,20 +99,24 @@ def normalize_symbol(symbol: str) -> str:
 
 # 网络名称 -> CoinGecko platform 名称映射
 NETWORK_TO_COINGECKO: dict[str, str] = {
+    # EVM 网络
     "eth": "ethereum",
     "ethereum": "ethereum",
+    "bsc": "binance-smart-chain",
+    "bnb": "binance-smart-chain",
     "base": "base",
+    "op": "optimistic-ethereum",
+    "optimism": "optimistic-ethereum",
     "arb": "arbitrum-one",
     "arbitrum": "arbitrum-one",
     "arbitrum-one": "arbitrum-one",
-    "op": "optimistic-ethereum",
-    "optimism": "optimistic-ethereum",
     "polygon": "polygon-pos",
     "matic": "polygon-pos",
-    "bnb": "binance-smart-chain",
-    "bsc": "binance-smart-chain",
-    "avax": "avalanche-2",
-    "avalanche": "avalanche-2",
+    "monad": "monad",
+    "ink": "ink",
+    "hyperliquid": "hyperliquid",
+    "hyperevm": "hyperliquid",
+    # 非 EVM
     "sol": "solana",
     "solana": "solana",
 }
