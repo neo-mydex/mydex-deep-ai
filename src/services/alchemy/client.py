@@ -5,9 +5,11 @@ Alchemy API 客户端配置
 import os
 import json
 from typing import Any
+from dotenv import load_dotenv
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
+load_dotenv()
 
 ALCHEMY_API_KEY = os.environ.get("ALCHEMY_API_KEY")
 ALCHEMY_DATA_API_BASE = f"https://api.g.alchemy.com/data/v1/{ALCHEMY_API_KEY}" if ALCHEMY_API_KEY else f"https://api.g.alchemy.com/data/v1/docs-demo"

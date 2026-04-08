@@ -19,7 +19,7 @@ class Asset(BaseModel):
 class WalletPortfolioResponse(BaseModel):
     """wallet_get_assets 返回格式
 
-    注意：仅支持 EVM 链（eth、base、arb、op、polygon、bnb、avax）。
+    注意：仅支持 EVM 链（eth、base、arb、op、polygon、bnb、avax、monad、ink、hyperliquid）。
     Solana 地址查询暂不支持（Alchemy EVM API 不覆盖 Solana）。"""
     ok: bool
     address: str
@@ -89,7 +89,7 @@ def wallet_get_assets(
 ) -> WalletPortfolioResponse:
     """查询钱包在多条链上的资产组合。用于"我钱包里有什么资产"。
 
-    注意：仅支持 EVM 链（eth、base、arb、op、polygon、bnb、avax）。
+    注意：支持 EVM 链（eth、base、arb、op、polygon、bnb、avax、monad、ink、hyperliquid）。
     Solana 地址请使用 wallet_get_native_balance 并指定 network="sol" 查询 SOL 余额。"""
     evm_address = runtime.context.evm_address if runtime.context else ""
     if not evm_address:
@@ -114,7 +114,7 @@ def wallet_get_native_balance(
 ) -> NativeBalanceResponse:
     """查询钱包原生代币余额（如 ETH、MATIC、BNB、SOL）。用于"ETH/Base 链原生币余额是多少"。
 
-    支持网络：eth、base、arb、op、polygon、bnb、avax、sol（仅原生余额）。"""
+    支持网络：eth、base、arb、op、polygon、bnb、avax、monad、ink、hyperliquid、sol（仅原生余额）。"""
     if network == "sol":
         sol_address = runtime.context.sol_address if runtime.context else ""
         if not sol_address:
@@ -144,6 +144,6 @@ def wallet_get_native_balance(
 
 if __name__ == "__main__":
     from rich import print
-    addr = "0x1234567890abcdef1234567890abcdef12345678"
+    addr = "0x269488c0F8D595CF47aAA91AC6Ef896f9F63cc9E"
     print(wallet_get_assets_impl(address=addr))
     print(wallet_get_native_balance_impl(address=addr))

@@ -4,9 +4,11 @@ Privy API HTTP 客户端
 
 import os
 import json
+from dotenv import load_dotenv
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
+load_dotenv()
 
 MYDEX_API_BASE = os.environ["MYDEX_API_BASE"]
 AI_API_USERS_URL = f"{MYDEX_API_BASE}/ai-api/users/"

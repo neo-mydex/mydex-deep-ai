@@ -6,9 +6,6 @@ Privy 服务模块
 └── cli.py     - CLI 入口
 """
 
-from dotenv import load_dotenv
-load_dotenv()
-
 from .service import get_user_profile, user_get_userid_impl
 
 __all__ = ["get_user_profile", "user_get_userid_impl"]

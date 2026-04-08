@@ -7,8 +7,11 @@ CoinGecko HTTP 客户端
 import os
 import json
 from typing import Any
+from dotenv import load_dotenv
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+
+load_dotenv()
 
 # API 配置
 COINGECKO_PRO_API_KEY = os.environ.get("COINGECKO_PRO_API_KEY")

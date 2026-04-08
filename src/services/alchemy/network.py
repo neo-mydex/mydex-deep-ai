@@ -23,6 +23,9 @@ NETWORK_MAP = {
     "solana": "sol-mainnet",
     "avax": "avax-mainnet",
     "avalanche": "avax-mainnet",
+    "monad": "monad-mainnet",
+    "ink": "ink-mainnet",
+    "hyperliquid": "hyperliquid-mainnet",
 }
 
 
@@ -35,6 +38,9 @@ NATIVE_TOKEN_METADATA = {
     "bnb-mainnet": {"symbol": "BNB", "name": "BNB", "decimals": 18},
     "avax-mainnet": {"symbol": "AVAX", "name": "Avalanche", "decimals": 18},
     "sol-mainnet": {"symbol": "SOL", "name": "Solana", "decimals": 9},
+    "monad-mainnet": {"symbol": "MON", "name": "Monad", "decimals": 18},
+    "ink-mainnet": {"symbol": "INK", "name": "Ink", "decimals": 18},
+    "hyperliquid-mainnet": {"symbol": "HYPE", "name": "Hyperliquid", "decimals": 18},
 }
 
 

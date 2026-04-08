@@ -22,7 +22,7 @@ def get_wallet_portfolio(
 
     参数:
         address: 钱包地址
-        networks: 网络列表，默认 ["eth", "base", "arb", "op"]
+        networks: 网络列表，默认 ["eth", "base", "arb", "op", "polygon", "bnb", "avax", "monad", "ink", "hyperliquid"]
         with_prices: 是否包含价格数据
         min_value_usd: 最小 USD 值过滤
 
@@ -38,7 +38,7 @@ def get_wallet_portfolio(
     }
     """
     if networks is None:
-        networks = ["eth", "base", "arb", "op"]
+        networks = ["eth", "base", "arb", "op", "polygon", "bnb", "avax", "monad", "ink", "hyperliquid"]
 
     # 标准化网络名称
     normalized_networks = [normalize_network(n) for n in networks]
