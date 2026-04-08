@@ -17,7 +17,7 @@ class CoinCandidate(BaseModel):
 
 
 class SearchCoinsResponse(BaseModel):
-    """coin_search 返回格式"""
+    """coin_search_coins 返回格式"""
     ok: bool
     query: str
     candidates: list[CoinCandidate] = Field(default_factory=list)
@@ -25,18 +25,22 @@ class SearchCoinsResponse(BaseModel):
     error: str | None = None
 
 
-def coin_search_impl(query: str) -> dict:
-    """搜索代币（纯函数，可直接测试）"""
+def coin_search_coins_impl(query: str) -> dict:
+    """搜索代币（纯函数）"""
     result = search_coins(query=query)
     return SearchCoinsResponse.model_validate(result).model_dump()
 
 
 @tool
-def coin_search(query: str) -> SearchCoinsResponse:
-    """搜索代币候选。用于用户只给了模糊名称时先做匹配。"""
-    return coin_search_impl(query=query)
+def coin_search_coins(query: str) -> SearchCoinsResponse:
+    """按关键词搜索代币候选。
+
+    输入：任意关键词（symbol、名称等），不支持合约地址。
+    返回匹配的代币候选列表（含 coin_id、symbol、排名、各链合约地址）。
+    用于用户只给了模糊名称时先做匹配。"""
+    return coin_search_coins_impl(query=query)
 
 
 if __name__ == "__main__":
     from rich import print
-    print(coin_search_impl(query="ETH"))
+    print(coin_search_coins_impl(query="安"))

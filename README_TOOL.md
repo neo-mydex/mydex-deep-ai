@@ -24,11 +24,20 @@ uv run python -m src.tools.<模块名>.<文件名>
 ### coin 模块
 
 ```bash
-uv run python -m src.tools.coin.get_price
-uv run python -m src.tools.coin.get_info
-uv run python -m src.tools.coin.search
-uv run python -m src.tools.coin.get_trending
+uv run python -m src.tools.coin.get_simple_price
+uv run python -m src.tools.coin.get_detail_info
+uv run python -m src.tools.coin.search_coins
+uv run python -m src.tools.coin.get_trending_coins
 ```
+
+**工具列表：**
+
+| 工具 | 说明 |
+|------|------|
+| `coin_get_simple_price` | 轻量价格接口，返回价格 + 24h 变化 |
+| `coin_get_detail_info` | 完整详情接口，返回价格、市值、排名、合约地址等 |
+| `coin_search_coins` | 按关键词搜索代币候选 |
+| `coin_get_trending_coins` | 查询热门代币 |
 
 ### perp 模块
 
