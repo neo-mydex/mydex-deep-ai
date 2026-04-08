@@ -224,6 +224,24 @@ def get_coin_price(
     """
     resolved = _resolve_coin_input(coin)
     coin_id = resolved["coin_id"]
+    input_type = resolved["input_type"]
+
+    # 如果不是合约地址，尝试直接用输入作为 coin_id 查询
+    if not coin_id and input_type != "contract" and not is_contract_address(coin):
+        try:
+            url = build_url(
+                "/simple/price",
+                params={
+                    "ids": coin,
+                    "vs_currencies": vs,
+                    "include_24hr_change": "true",
+                },
+            )
+            result = fetch_json(url)
+            if coin in result:
+                coin_id = coin
+        except Exception:
+            pass
 
     if not coin_id:
         return {
@@ -302,6 +320,17 @@ def get_coin_info(
     """
     resolved = _resolve_coin_input(coin)
     coin_id = resolved["coin_id"]
+    input_type = resolved["input_type"]
+
+    # 如果不是合约地址，尝试直接用输入作为 coin_id 查询
+    if not coin_id and input_type != "contract" and not is_contract_address(coin):
+        try:
+            data = _fetch_coin_detail(coin)
+            if data and data.get("id"):
+                coin_id = data["id"]
+                input_type = "coin_id_direct"
+        except Exception:
+            pass
 
     if not coin_id:
         return {
@@ -322,7 +351,7 @@ def get_coin_info(
 
     try:
         # 合约地址查询直接返回完整数据
-        if resolved["input_type"] == "contract":
+        if input_type == "contract":
             data = _fetch_token_by_contract(resolved["network"], coin)
         else:
             data = _fetch_coin_detail(coin_id)
