@@ -1,15 +1,13 @@
 """
-钱包链上资产查询
+钱包 EVM 链上资产查询
 """
 
-from langchain.tools import ToolRuntime
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
-from src.services.alchemy import get_wallet_portfolio, get_native_balance
 
 
 class Asset(BaseModel):
-    """单个资产条目（简化字段）"""
+    """单个资产条目"""
     network: str
     symbol: str | None = None
     balance: float
@@ -17,10 +15,7 @@ class Asset(BaseModel):
 
 
 class WalletPortfolioResponse(BaseModel):
-    """wallet_get_assets 返回格式
-
-    注意：仅支持 EVM 链（eth、base、arb、op、polygon、bnb、avax、monad、ink、hyperliquid）。
-    Solana 地址查询暂不支持（Alchemy EVM API 不覆盖 Solana）。"""
+    """wallet_get_assets 返回格式"""
     ok: bool
     address: str
     total_value_usd: float
@@ -28,31 +23,26 @@ class WalletPortfolioResponse(BaseModel):
     error: str | None = None
 
 
-class NativeBalanceResponse(BaseModel):
-    """wallet_get_native_balance 返回格式"""
-    ok: bool
-    address: str
-    network: str
-    symbol: str
-    balance: float
-    value_usd: float | None = None
-    error: str | None = None
+# 全部支持的 EVM 网络（9 条）
+ALL_EVM_NETWORKS = ["eth", "base", "arb", "op", "polygon", "bnb", "monad", "ink", "hyperliquid"]
 
 
 def wallet_get_assets_impl(
-    address: str,
+    evm_address: str,
     networks: list[str] | None = None,
     with_prices: bool = True,
     min_value_usd: float = 0.01,
 ) -> dict:
-    """查询钱包资产组合（纯函数，可直接测试）"""
+    """查询 EVM 钱包资产组合（纯函数，可直接测试）"""
+    from src.services.alchemy import get_wallet_portfolio
+
+    target_networks = networks if networks is not None else ALL_EVM_NETWORKS
     raw = get_wallet_portfolio(
-        address=address,
-        networks=networks,
+        address=evm_address,
+        networks=target_networks,
         with_prices=with_prices,
         min_value_usd=min_value_usd,
     )
-    # 简化响应：只保留关键字段，去除 breakdown 重复数据
     simplified_assets = [
         Asset(
             network=a.get("network", ""),
@@ -64,86 +54,45 @@ def wallet_get_assets_impl(
     ]
     return WalletPortfolioResponse(
         ok=raw.get("ok", False),
-        address=raw.get("address", address),
+        address=raw.get("address", evm_address),
         total_value_usd=raw.get("total_value_usd", 0),
         assets=simplified_assets,
         error=raw.get("error"),
     ).model_dump()
 
 
-def wallet_get_native_balance_impl(
-    address: str,
-    network: str = "eth",
-) -> dict:
-    """查询钱包原生代币余额（纯函数，可直接测试）"""
-    result = get_native_balance(address=address, network=network)
-    return NativeBalanceResponse.model_validate(result).model_dump()
-
-
 @tool
 def wallet_get_assets(
-    runtime: ToolRuntime,
+    evm_address: str,
     networks: list[str] | None = None,
     with_prices: bool = True,
     min_value_usd: float = 0.01,
 ) -> WalletPortfolioResponse:
-    """查询钱包在多条链上的资产组合。用于"我钱包里有什么资产"。
+    """查询 EVM 钱包在多条链上的资产组合。
 
-    注意：支持 EVM 链（eth、base、arb、op、polygon、bnb、avax、monad、ink、hyperliquid）。
-    Solana 地址请使用 wallet_get_native_balance 并指定 network="sol" 查询 SOL 余额。"""
-    evm_address = runtime.context.evm_address if runtime.context else ""
+    参数:
+        evm_address: EVM 钱包地址（0x 开头）
+        networks: 要查询的网络列表，默认全部 9 条 EVM 链
+                  可选，如 ["eth", "base", "monad"]
+
+    支持网络: eth, base, arb, op, polygon, bnb, monad, ink, hyperliquid"""
     if not evm_address:
         return WalletPortfolioResponse(
             ok=False,
             address="",
             total_value_usd=0,
-            error="未绑定 EVM 钱包地址",
+            error="evm_address 不能为空",
         ).model_dump()
     return wallet_get_assets_impl(
-        address=evm_address,
+        evm_address=evm_address,
         networks=networks,
         with_prices=with_prices,
         min_value_usd=min_value_usd,
     )
 
 
-@tool
-def wallet_get_native_balance(
-    runtime: ToolRuntime,
-    network: str = "eth",
-) -> NativeBalanceResponse:
-    """查询钱包原生代币余额（如 ETH、MATIC、BNB、SOL）。用于"ETH/Base 链原生币余额是多少"。
-
-    支持网络：eth、base、arb、op、polygon、bnb、avax、monad、ink、hyperliquid、sol（仅原生余额）。"""
-    if network == "sol":
-        sol_address = runtime.context.sol_address if runtime.context else ""
-        if not sol_address:
-            return NativeBalanceResponse(
-                ok=False,
-                address="",
-                network="sol",
-                symbol="SOL",
-                balance=0,
-                error="未绑定 Solana 钱包地址",
-            ).model_dump()
-        address = sol_address
-    else:
-        evm_address = runtime.context.evm_address if runtime.context else ""
-        if not evm_address:
-            return NativeBalanceResponse(
-                ok=False,
-                address="",
-                network=network,
-                symbol=network.upper(),
-                balance=0,
-                error="未绑定 EVM 钱包地址",
-            ).model_dump()
-        address = evm_address
-    return wallet_get_native_balance_impl(address=address, network=network)
-
-
 if __name__ == "__main__":
     from rich import print
     addr = "0x269488c0F8D595CF47aAA91AC6Ef896f9F63cc9E"
-    print(wallet_get_assets_impl(address=addr))
-    print(wallet_get_native_balance_impl(address=addr))
+    print(wallet_get_assets_impl(evm_address=addr))
+    print(wallet_get_assets_impl(evm_address=addr, networks=["eth", "base"]))
