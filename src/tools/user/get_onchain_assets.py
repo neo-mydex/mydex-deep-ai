@@ -1,13 +1,17 @@
 """
-钱包 EVM 链上资产查询
+钱包链上资产查询（EVM + Solana）
 """
 
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
 
+# =============================================================================
+# Pydantic 类
+# =============================================================================
+
 class Asset(BaseModel):
-    """单个资产条目"""
+    """单个 EVM 资产条目"""
     network: str
     symbol: str | None = None
     balance: float
@@ -23,9 +27,34 @@ class WalletPortfolioResponse(BaseModel):
     error: str | None = None
 
 
-# 全部支持的 EVM 网络（9 条）
+class SolAsset(BaseModel):
+    """单个 Solana 资产条目"""
+    network: str = "sol-mainnet"
+    symbol: str | None = None
+    name: str | None = None
+    balance: float
+    value_usd: float | None = None
+
+
+class SolAssetsResponse(BaseModel):
+    """wallet_get_sol_assets 返回格式"""
+    ok: bool
+    address: str
+    total_value_usd: float
+    assets: list[SolAsset] = Field(default_factory=list)
+    error: str | None = None
+
+
+# =============================================================================
+# 常量
+# =============================================================================
+
 ALL_EVM_NETWORKS = ["eth", "base", "arb", "op", "polygon", "bnb", "monad", "ink", "hyperliquid"]
 
+
+# =============================================================================
+# impl 纯函数
+# =============================================================================
 
 def wallet_get_assets_impl(
     evm_address: str,
@@ -61,6 +90,34 @@ def wallet_get_assets_impl(
     ).model_dump()
 
 
+def wallet_get_sol_assets_impl(sol_address: str) -> dict:
+    """查询 Solana 钱包资产（纯函数，可直接测试）"""
+    from src.services.alchemy.solana import get_solana_portfolio
+
+    raw = get_solana_portfolio(sol_address)
+    assets = [
+        SolAsset(
+            network=a.get("network", "sol-mainnet"),
+            symbol=a.get("symbol"),
+            name=a.get("name"),
+            balance=a.get("balance", 0),
+            value_usd=a.get("value_usd"),
+        )
+        for a in raw.get("assets", [])
+    ]
+    return SolAssetsResponse(
+        ok=raw.get("ok", False),
+        address=raw.get("address", sol_address),
+        total_value_usd=raw.get("total_value_usd", 0),
+        assets=assets,
+        error=raw.get("error"),
+    ).model_dump()
+
+
+# =============================================================================
+# @tool 函数
+# =============================================================================
+
 @tool
 def wallet_get_assets(
     evm_address: str,
@@ -91,48 +148,6 @@ def wallet_get_assets(
     )
 
 
-class SolAsset(BaseModel):
-    """单个 Solana 资产条目"""
-    network: str = "sol-mainnet"
-    symbol: str | None = None
-    name: str | None = None
-    balance: float
-    value_usd: float | None = None
-
-
-class SolAssetsResponse(BaseModel):
-    """wallet_get_sol_assets 返回格式"""
-    ok: bool
-    address: str
-    total_value_usd: float
-    assets: list[SolAsset] = Field(default_factory=list)
-    error: str | None = None
-
-
-def wallet_get_sol_assets_impl(sol_address: str) -> dict:
-    """查询 Solana 钱包资产（纯函数，可直接测试）"""
-    from src.services.alchemy.solana import get_solana_portfolio
-
-    raw = get_solana_portfolio(sol_address)
-    assets = [
-        SolAsset(
-            network=a.get("network", "sol-mainnet"),
-            symbol=a.get("symbol"),
-            name=a.get("name"),
-            balance=a.get("balance", 0),
-            value_usd=a.get("value_usd"),
-        )
-        for a in raw.get("assets", [])
-    ]
-    return SolAssetsResponse(
-        ok=raw.get("ok", False),
-        address=raw.get("address", sol_address),
-        total_value_usd=raw.get("total_value_usd", 0),
-        assets=assets,
-        error=raw.get("error"),
-    ).model_dump()
-
-
 @tool
 def wallet_get_sol_assets(sol_address: str) -> SolAssetsResponse:
     """查询 Solana 钱包的所有代币资产。
@@ -148,6 +163,10 @@ def wallet_get_sol_assets(sol_address: str) -> SolAssetsResponse:
         ).model_dump()
     return wallet_get_sol_assets_impl(sol_address)
 
+
+# =============================================================================
+# if __name__ == "__main__"
+# =============================================================================
 
 if __name__ == "__main__":
     from rich import print
