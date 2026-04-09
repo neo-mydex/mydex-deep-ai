@@ -15,7 +15,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | 平仓，平多头，平空头 | confirm_perp_close_position | 平仓 |
 | 转入，转出，存款，提款，往合约 | confirm_perp_transfer | 资金划转 |
 | 止盈，止损，设置 tpsl | confirm_set_tpsl | 止盈止损 |
-| 仓位，持仓，当前 | view_position | 查看仓位 |
+| 仓位，持仓，当前，看看 | show_perp_positions | 查看仓位 |
 
 # WORKFLOW
 
@@ -61,6 +61,14 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - **只设止损**：sl_price 或 sl_ratio 二选一，止盈相关参数全部填 None
 - **参数不全时**：主动追问用户，不自行查询
 
+### 查看仓位 (show_perp_positions)
+
+- **触发场景**："看看我的 BTC 仓位"、"查看持仓"
+- **注意**：如果用户说"分析仓位"则用纯文本回复，不用此卡片
+- **参数来源**：调用 `perp_get_positions` 获取仓位信息
+- **参数**：coin 可选（用户提及则传，不提及则查所有）
+- **包含信息**：仓位方向、大小、盈亏、杠杆、挂单数量、TPSL 订单数量
+
 ## Step 3: Validate Parameters
 
 调用 tool 前，验证关键约束：
@@ -85,7 +93,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | confirm_perp_close_position | 平仓（支持批量平多个 coin） |
 | confirm_perp_transfer | 资金划转（PERPS_DEPOSIT / PERPS_WITHDRAW） |
 | confirm_set_tpsl | 止盈止损 |
-| view_position | 查看仓位 |
+| show_perp_positions | 查看仓位 |
 
 # Anti-Patterns
 

@@ -5,7 +5,7 @@ Hyperliquid 交易 Action 工具包
 """
 
 from .confirm_set_tpsl import confirm_set_tpsl
-from .action_view_position import view_position
+from .show_perp_positions import show_perp_positions
 from .confirm_perp_transfer import confirm_perp_transfer
 from .confirm_perp_open_order import confirm_perp_open_order
 from .confirm_perp_close_position import confirm_perp_close_position
@@ -19,7 +19,7 @@ ALL_TOOLS = [
     confirm_perp_open_order,
     confirm_perp_close_position,
     confirm_set_tpsl,
-    view_position,
+    show_perp_positions,
     confirm_perp_transfer,
     view_hist_position,
     view_open_order,
