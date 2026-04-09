@@ -46,6 +46,13 @@ tp_price=72000, sl_price=66500,
 source_text="BTC 仓位止盈 72000，止损 66500"
 ```
 
+**只设止盈（不设止损）：**
+```
+coin="BTC", position_size=0.2921,
+tp_price=72000,
+source_text="BTC 仓位止盈 72000"
+```
+
 **比例止盈止损：**
 ```
 coin="ETH", position_size=1.0,

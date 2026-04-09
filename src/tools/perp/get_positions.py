@@ -4,8 +4,8 @@
 
 from typing import Literal
 from langchain_core.tools import tool
-from pydantic import BaseModel
-from src.services.hyperliquid.cli import get_user_positions, get_user_position
+from pydantic import BaseModel, Field
+from src.services.hyperliquid.cli import get_user_positions
 
 Network = Literal["mainnet", "testnet"]
 Side = Literal["long", "short", "flat"]
@@ -31,59 +31,50 @@ class PositionsResponse(BaseModel):
     ok: bool
     address: str
     network: Network
-    account_value: float | None = None
-    withdrawable: float
-    positions: list[PositionDetail] = []
-
-
-class SinglePositionResponse(BaseModel):
-    """perp_get_position 返回格式"""
-    ok: bool
-    address: str
-    coin: str
-    network: Network
-    has_position: bool
-    position_side: Side
-    position_size: float | None = None
-    entry_px: float | None = None
-    mark_px: float | None = None
-    leverage: int | None = None
-    margin_type: MarginType | None = None
-    liquidation_px: float | None = None
-    unrealized_pnl: float | None = None
+    coin: str | None = None
+    positions: list[PositionDetail] = Field(default_factory=list)
 
 
 def perp_get_positions_impl(
     address: str,
+    coin: str | None = None,
     network: Network = "mainnet",
 ) -> dict:
-    """获取所有仓位（纯函数，可直接测试）"""
+    """获取用户仓位（纯函数，可直接测试）
+
+    - coin=None → 返回所有仓位
+    - coin="BTC" → 只返回该 coin 的仓位
+    """
     result = get_user_positions(address=address, network=network)
-    return PositionsResponse.model_validate(result).model_dump()
 
+    positions: list[dict] = result.get("positions", [])
+    if coin is not None:
+        positions = [p for p in positions if p.get("coin") == coin]
 
-def perp_get_position_impl(
-    address: str,
-    coin: str,
-    network: Network = "mainnet",
-) -> dict:
-    """获取指定币种仓位（纯函数，可直接测试）"""
-    result = get_user_position(address=address, coin=coin, network=network)
-    return SinglePositionResponse.model_validate(result).model_dump()
+    return PositionsResponse.model_validate({
+        "ok": result.get("ok", False),
+        "address": result.get("address", address),
+        "network": result.get("network", network),
+        "coin": coin,
+        "positions": positions,
+    }).model_dump()
 
 
 @tool
 def perp_get_positions(
     address: str,
+    coin: str | None = None,
     network: Network = "mainnet",
 ) -> PositionsResponse:
     """
-    获取 Hyperliquid 永续合约用户所有仓位。
+    获取 Hyperliquid 永续合约用户仓位。
 
-    用于查询用户当前持有的所有永续合约仓位，包括方向、大小、盈亏等信息。
+    - coin 不传 → 返回用户所有仓位
+    - coin 传了 → 只返回该币种仓位
 
     参数:
         address: 用户钱包地址
+        coin: 币种名称，如 "BTC"、"ETH"，不传则查所有
         network: 网络类型，"mainnet" 或 "testnet"
 
     返回:
@@ -91,52 +82,22 @@ def perp_get_positions(
             "ok": bool,
             "address": str,
             "network": str,
-            "account_value": float | None,
-            "withdrawable": float,
+            "coin": str | None,
             "positions": list[PositionDetail],
         }
     """
-    return perp_get_positions_impl(address=address, network=network)
-
-
-@tool
-def perp_get_position(
-    address: str,
-    coin: str,
-    network: Network = "mainnet",
-) -> SinglePositionResponse:
-    """
-    获取 Hyperliquid 永续合约用户指定币种的仓位。
-
-    用于查询用户当前持有的某个特定币种的永续合约仓位。
-
-    参数:
-        address: 用户钱包地址
-        coin: 币种名称，如 "BTC"、"ETH"
-        network: 网络类型，"mainnet" 或 "testnet"
-
-    返回:
-        SinglePositionResponse: {
-            "ok": bool,
-            "address": str,
-            "coin": str,
-            "network": str,
-            "has_position": bool,
-            "position_side": "long" | "short" | "flat",
-            "position_size": float | None,
-            "entry_px": float | None,
-            "mark_px": float | None,
-            "leverage": int | None,
-            "margin_type": "cross" | "isolated" | None,
-            "liquidation_px": float | None,
-            "unrealized_pnl": float | None,
-        }
-    """
-    return perp_get_position_impl(address=address, coin=coin, network=network)
+    return perp_get_positions_impl(address=address, coin=coin, network=network)
 
 
 if __name__ == "__main__":
     from rich import print
-    addr = "0x1234567890abcdef1234567890abcdef12345678"
-    print(perp_get_positions_impl(address=addr))
-    print(perp_get_position_impl(address=addr, coin="BTC"))
+    from dotenv import load_dotenv
+    import os
+    load_dotenv()
+    EVM_ADDRESS = os.environ["EVM_ADDRESS"]
+
+    print("=== 查所有仓位 ===")
+    print(perp_get_positions_impl(address=EVM_ADDRESS))
+    print()
+    print("=== 查 BTC ===")
+    print(perp_get_positions_impl(address=EVM_ADDRESS, coin="BTC"))

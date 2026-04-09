@@ -35,7 +35,9 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 
 ### 平仓 (confirm_perp_close_position)
 
-- **前置检查**：调用 `view_position` 获取用户当前仓位信息（coin、position_side、position_size、mark_price）
+- **前置检查**：
+  - 用户提及了具体 coin → 调用 `perp_get_positions(address, coin=xxx)` 获取该 coin 的仓位
+  - 用户没有提及 coin → 调用 `perp_get_positions(address)` 获取所有仓位，遍历处理
 - **约束**：无，每轮可批量平多个 coin
 - **参数来源**：参考 [confirm_perp_close_position 参数详解](resources/confirm_perp_close_position.md)
 - **必填参数**：closes（list，含 coin、position_side、position_size）
@@ -49,10 +51,14 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 
 ### 止盈止损 (confirm_set_tpsl)
 
-- **前置检查**：调用 `view_position` 获取用户当前仓位信息（coin、position_size）
-- **参数来源**：参考 [confirm_set_tpsl 参数详解](resources/confirm_set_tpsl.md)
-- **必填参数**：coin、position_size、tp_price/tp_ratio 二选一、sl_price/sl_ratio 二选一
-- **existing_tp_oid / existing_sl_oid**：0 = 第一次设置，非0 = 更新已有 TPSL 订单
+- **前置检查**：
+  - 用户提及了具体 coin → 调用 `perp_get_positions(address, coin=xxx)` 获取该 coin 的仓位
+  - 用户没有提及 coin → 先追问用户要设置哪个 coin（TPSL 不支持批量）
+- **查询已有订单**：调用 `perp_get_open_orders(address, coin=xxx)` 查该 coin 是否有现有 TPSL 订单
+  - 若有，在参数中填入 `existing_tp_oid` / `existing_sl_oid`
+  - 若无，`existing_tp_oid` / `existing_sl_oid` 均填 `0`
+- **只设止盈**：tp_price 或 tp_ratio 二选一，止损相关参数全部填 None
+- **只设止损**：sl_price 或 sl_ratio 二选一，止盈相关参数全部填 None
 - **参数不全时**：主动追问用户，不自行查询
 
 ## Step 3: Validate Parameters

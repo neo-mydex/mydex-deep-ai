@@ -11,7 +11,7 @@ Key constraints:
 """
 
 from langchain_core.tools import tool
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ValidationError, model_validator
 from typing import Literal
 
 
@@ -24,6 +24,32 @@ class SetTpslAction(BaseModel):
     action: Literal["SET_TPSL"]
     execution_plan: list[dict]
     meta: dict
+
+
+class ConfirmSetTpslInput(BaseModel):
+    """confirm_set_tpsl 输入参数与校验"""
+    coin: str
+    position_size: float = Field(gt=0)
+    tp_price: float | None = Field(default=None, gt=0)
+    tp_ratio: float | None = Field(default=None, gt=0, le=1)
+    sl_price: float | None = Field(default=None, gt=0)
+    sl_ratio: float | None = Field(default=None, gt=0, le=1)
+    existing_tp_oid: int = Field(default=0, ge=0)
+    existing_sl_oid: int = Field(default=0, ge=0)
+    source_text: str = ""
+
+    @model_validator(mode="after")
+    def validate_semantics(self) -> "ConfirmSetTpslInput":
+        if self.tp_price is not None and self.tp_ratio is not None:
+            raise ValueError("tp_price 和 tp_ratio 二选一，不可同时指定")
+        if self.sl_price is not None and self.sl_ratio is not None:
+            raise ValueError("sl_price 和 sl_ratio 二选一，不可同时指定")
+
+        has_tp = self.tp_price is not None or self.tp_ratio is not None or self.existing_tp_oid > 0
+        has_sl = self.sl_price is not None or self.sl_ratio is not None or self.existing_sl_oid > 0
+        if not has_tp and not has_sl:
+            raise ValueError("至少需要提供止盈参数或止损参数之一")
+        return self
 
 
 # =============================================================================
@@ -50,31 +76,36 @@ def confirm_set_tpsl_impl(
     source_text: str = "",
 ) -> dict:
     """设置止盈止损卡片（SET_TPSL）。用于"BTC 仓位止盈 72000，止损 66500"类意图。"""
-    if tp_price is not None and tp_ratio is not None:
-        raise ValueError("tp_price 和 tp_ratio 二选一，不可同时指定")
-    if tp_price is None and tp_ratio is None and existing_tp_oid == 0:
-        raise ValueError("止盈需要提供 tp_price 或 tp_ratio 之一（或者已有止盈单号则传 existing_tp_oid）")
-    if sl_price is not None and sl_ratio is not None:
-        raise ValueError("sl_price 和 sl_ratio 二选一，不可同时指定")
-    if sl_price is None and sl_ratio is None and existing_sl_oid == 0:
-        # 既是新建 sl 又没提供任何 sl 参数，报错
-        raise ValueError("止损需要提供 sl_price 或 sl_ratio 之一（或者已有止损单号则传 existing_sl_oid）")
+    try:
+        payload = ConfirmSetTpslInput(
+            coin=coin,
+            position_size=position_size,
+            tp_price=tp_price,
+            tp_ratio=tp_ratio,
+            sl_price=sl_price,
+            sl_ratio=sl_ratio,
+            existing_tp_oid=existing_tp_oid,
+            existing_sl_oid=existing_sl_oid,
+            source_text=source_text,
+        )
+    except ValidationError as e:
+        raise ValueError(str(e)) from e
 
     item_dict = {
         "intent": "SET_TPSL",
-        "coin": coin.upper(),
-        "size": _str(round(position_size, 6)),
-        "tpPrice": _str(tp_price),
-        "tpRatio": tp_ratio,
-        "slPrice": _str(sl_price),
-        "slRatio": sl_ratio,
-        "existingTpOid": existing_tp_oid,
-        "existingSlOid": existing_sl_oid,
+        "coin": payload.coin.upper(),
+        "size": _str(round(payload.position_size, 6)),
+        "tpPrice": _str(payload.tp_price),
+        "tpRatio": payload.tp_ratio,
+        "slPrice": _str(payload.sl_price),
+        "slRatio": payload.sl_ratio,
+        "existingTpOid": payload.existing_tp_oid,
+        "existingSlOid": payload.existing_sl_oid,
     }
     return SetTpslAction.model_validate({
         "action": "SET_TPSL",
         "execution_plan": [item_dict],
-        "meta": {"source_text": source_text},
+        "meta": {"source_text": payload.source_text},
     }).model_dump()
 
 
@@ -82,7 +113,7 @@ def confirm_set_tpsl_impl(
 # @tool 函数
 # =============================================================================
 
-@tool
+@tool(args_schema=ConfirmSetTpslInput)
 def confirm_set_tpsl(
     coin: str,
     position_size: float,
@@ -96,11 +127,13 @@ def confirm_set_tpsl(
 ) -> dict:
     """设置止盈止损卡片（SET_TPSL）
 
-    用户想给仓位设置止盈或止损时使用。
+    用户想给仓位设置止盈或止损时使用。TP 和 SL 相互独立，可以只设其中一个。
 
-    互斥规则：
-    - tp_price 和 tp_ratio 二选一（指定价格或指定比例）
-    - sl_price 和 sl_ratio 二选一
+    参数规则：
+    - tp_price 和 tp_ratio 互斥，二选一
+    - sl_price 和 sl_ratio 互斥，二选一
+    - 止盈：tp_price / tp_ratio / existing_tp_oid > 0 三者至少有一个
+    - 止损：sl_price / sl_ratio / existing_sl_oid > 0 三者至少有一个
 
     existing_tp_oid / existing_sl_oid：
     - 0 = 第一次设置该方向的 TPSL
@@ -108,6 +141,7 @@ def confirm_set_tpsl(
 
     示例：
     - "BTC 仓位止盈 72000，止损 66500" → tp_price=72000, sl_price=66500
+    - "BTC 仓位只设止盈 72000" → tp_price=72000
     - "ETH 仓位 30% 止盈，10% 止损" → tp_ratio=0.3, sl_ratio=0.1
     - "把 BTC 止盈改成 72500" → tp_price=72500, existing_tp_oid=18273645
     """
