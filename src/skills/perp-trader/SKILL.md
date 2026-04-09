@@ -14,7 +14,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | 做多，做空，开仓，做多 BTC | confirm_perp_open_order | 开仓 |
 | 平仓，平多头，平空头 | confirm_perp_close_position | 平仓 |
 | 转入，转出，存款，提款，往合约 | confirm_perp_transfer | 资金划转 |
-| 止盈，止损，设置 tpsl | confirm_set_tpsl | 止盈止损 |
+| 止盈，止损，设置 tpsl | confirm_perp_set_tpsl | 止盈止损 |
 | 仓位，持仓，当前，看看 | show_perp_positions | 查看仓位 |
 
 # WORKFLOW
@@ -49,7 +49,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - **必填参数**：action_type（PERPS_DEPOSIT / PERPS_WITHDRAW）、amount
 - **参数不全时**：主动追问用户，不自行查询
 
-### 止盈止损 (confirm_set_tpsl)
+### 止盈止损 (confirm_perp_set_tpsl)
 
 - **前置检查**：
   - 用户提及了具体 coin → 调用 `perp_get_positions(address, coin=xxx)` 获取该 coin 的仓位
@@ -92,7 +92,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | confirm_perp_open_order | 开仓（做多/做空） |
 | confirm_perp_close_position | 平仓（支持批量平多个 coin） |
 | confirm_perp_transfer | 资金划转（PERPS_DEPOSIT / PERPS_WITHDRAW） |
-| confirm_set_tpsl | 止盈止损 |
+| confirm_perp_set_tpsl | 止盈止损 |
 | show_perp_positions | 查看仓位 |
 
 # Anti-Patterns
@@ -106,4 +106,4 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - [confirm_perp_open_order 参数详解](resources/confirm_perp_open_order.md)
 - [confirm_perp_close_position 参数详解](resources/confirm_perp_close_position.md)
 - [confirm_perp_transfer 参数详解](resources/confirm_perp_transfer.md)
-- [confirm_set_tpsl 参数详解](resources/confirm_set_tpsl.md)
+- [confirm_perp_set_tpsl 参数详解](resources/confirm_perp_set_tpsl.md)
