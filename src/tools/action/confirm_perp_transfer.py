@@ -79,6 +79,8 @@ def confirm_perp_transfer(
 if __name__ == "__main__":
     from rich import print
 
+    # uv run python -m src.tools.action.confirm_perp_transfer
+
     print("=== PERPS_DEPOSIT ===")
     print(confirm_perp_transfer_impl(
         action_type="PERPS_DEPOSIT",

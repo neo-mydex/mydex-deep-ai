@@ -180,6 +180,8 @@ def confirm_perp_open_order(
 if __name__ == "__main__":
     from rich import print
 
+    # uv run python -m src.tools.action.confirm_perp_open_position
+
     print("=== OPEN_LONG ===")
     print(confirm_perp_open_order_impl(
         coin="BTC",
