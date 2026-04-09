@@ -58,4 +58,8 @@ def perp_get_balance(
 
 if __name__ == "__main__":
     from rich import print
-    print(perp_get_balance_impl(address="0x1234567890abcdef1234567890abcdef12345678"))
+    from dotenv import load_dotenv
+    import os
+    load_dotenv()
+    EVM_ADDRESS = os.environ["EVM_ADDRESS"]
+    print(perp_get_balance_impl(address=EVM_ADDRESS))

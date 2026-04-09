@@ -47,5 +47,8 @@ def user_get_wallet_address(runtime: ToolRuntime) -> WalletAddressResponse:
 
 if __name__ == "__main__":
     from rich import print
-    jwt="eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjVnRG9ZY3J4elFqanNkVVdUaGVQd2FVUlJHTnZtaGlraEl0SnNQdUFmVUEifQ.eyJzaWQiOiJjbW5mdHZnemcwMGVqMGNrc3ljbzk4cGM0IiwiaXNzIjoicHJpdnkuaW8iLCJpYXQiOjE3NzU2MzE2MzQsImF1ZCI6ImNtbHVidWxkaTAyZ3MwYmxhbWgwcWV3aXQiLCJzdWIiOiJkaWQ6cHJpdnk6Y21tc2w2dDI0MDIwMjBjbDJycGVyYzVtMSIsImV4cCI6MTc3NTcxODAzNH0.PLpAp7mZQtWKCwOHb-NpsYv-CjYQWtYeagN0svrkKt0zAmBxGLyjtNGovoR6BTdJafAkBJD5ND9BRimXTjytZA"
-    print(user_get_wallet_address_impl(jwt))
+    from dotenv import load_dotenv
+    import os
+    load_dotenv()
+    JWT = os.environ["JWT"]
+    print(user_get_wallet_address_impl(jwt=JWT))
