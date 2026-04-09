@@ -17,25 +17,41 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | 止盈，止损，设置 tpsl | set_tpsl | 止盈止损 |
 | 仓位，持仓，当前 | view_position | 查看仓位 |
 
-# SOP（4 步）
+# WORKFLOW
 
-## 第一步：识别意图
+## Step 1: Recognize Intent
 
 根据用户输入，匹配上方 Intent Routing Table，选定对应 Tool。
 
-## 第二步：收集参数
+## Step 2: Feasibility Check & Parameter Collection
 
-根据意图类型，参考对应 resource 文件获取详细参数说明：
+### 开仓 (confirm_perp_open_order)
 
-- 开仓 → [confirm_perp_open_order 参数详解](resources/open-position.md)
-- 平仓 → confirm_perp_close_position（待补充）
-- 划转 → [confirm_perp_transfer 参数详解](resources/transfer.md)
-- 止盈止损 → set_tpsl（待补充）
-- 查看仓位 → 参数仅需 coin
+- **约束**：每轮对话只能开一个 coin，多个意图时按 coin 名升序选第一个
+- **参数来源**：参考 [confirm_perp_open_order 参数详解](resources/open-position.md)
+- **必填参数**：coin、leverage、usdc_size、side
+- **可选参数**：tp/sl（价格）、tp_ratio/sl_ratio（比例）、order_type、entry_price、margin_mode
+- **参数不全时**：主动追问用户，不自行查询
 
-**参数不全时**：主动追问用户，不自行查询。
+### 平仓 (confirm_perp_close_position)
 
-## 第三步：验证参数合理性
+- **前置检查**：调用 `view_position` 获取用户当前仓位信息（coin、position_side、position_size、mark_price）
+- **约束**：无，每轮可批量平多个 coin
+- **参数来源**：参考 [confirm_perp_close_position 参数详解](resources/close-position.md)
+- **必填参数**：closes（list，含 coin、position_side、position_size）
+- **参数不全时**：主动追问用户，不自行查询
+
+### 资金划转 (confirm_perp_transfer)
+
+- **参数来源**：参考 [confirm_perp_transfer 参数详解](resources/transfer.md)
+- **必填参数**：action_type（PERPS_DEPOSIT / PERPS_WITHDRAW）、amount
+- **参数不全时**：主动追问用户，不自行查询
+
+### 止盈止损 (set_tpsl)
+
+- 待补充
+
+## Step 3: Validate Parameters
 
 调用 tool 前，验证关键约束：
 
@@ -47,7 +63,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 
 **验证失败**：直接告知用户问题所在，不调用 tool。
 
-## 第四步：生成 Confirm Card
+## Step 4: Generate Confirm Card
 
 验证通过后，调用对应 action tool，返回 confirm card 等待用户确认。
 
@@ -56,7 +72,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | Tool | 用途 |
 |------|------|
 | confirm_perp_open_order | 开仓（做多/做空） |
-| confirm_perp_close_position | 平仓（待补充） |
+| confirm_perp_close_position | 平仓（支持批量平多个 coin） |
 | confirm_perp_transfer | 资金划转（PERPS_DEPOSIT / PERPS_WITHDRAW） |
 | set_tpsl | 止盈止损（待补充） |
 | view_position | 查看仓位 |
@@ -70,4 +86,5 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 # Resources
 
 - [开仓参数详解](resources/open-position.md)
+- [平仓参数详解](resources/close-position.md)
 - [划转参数详解](resources/transfer.md)
