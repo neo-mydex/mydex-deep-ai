@@ -1,31 +1,27 @@
 """
 Hyperliquid 交易 Action 工具包
 
-按 Feature_HyperliquidAIAgentIntent.zh-CN.md 文档实现
+按 hyperliquid交易卡片需求文档.md 5.1-5.11 实现
 """
 
-from .action_open import (
-    build_open_long_params,
-    build_open_short_params,
-    action_open_position,
-)
+from .confirm_set_tpsl import confirm_set_tpsl
+from .action_view_position import view_position
+from .confirm_perp_transfer import confirm_perp_transfer
+from .confirm_perp_open_order import confirm_perp_open_order
+from .confirm_perp_close_position import confirm_perp_close_position
 
-from .action_close import (
-    build_close_position_params,
-    action_close_position,
-)
+# stubs（尚未实现，不加入 ALL_TOOLS）
+from .action_view_hist_position import view_hist_position
+from .action_view_open_order import view_open_order
+from .action_cancel_open_order import cancel_open_order
 
-from .action_tpsl import (
-    build_set_tpsl_params,
-    action_set_tpsl,
-)
-
-from .action_leverage import (
-    build_update_leverage_params,
-    action_update_leverage,
-)
-
-from .action_view_position import (
-    build_view_position_params,
-    action_view_position,
-)
+ALL_TOOLS = [
+    confirm_perp_open_order,
+    confirm_perp_close_position,
+    confirm_set_tpsl,
+    view_position,
+    confirm_perp_transfer,
+    view_hist_position,
+    view_open_order,
+    cancel_open_order,
+]
