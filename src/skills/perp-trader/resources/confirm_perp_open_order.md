@@ -1,4 +1,4 @@
-# confirm_perp_open_order 参数详解
+# confirm_perp_open_order
 
 ## 概述
 

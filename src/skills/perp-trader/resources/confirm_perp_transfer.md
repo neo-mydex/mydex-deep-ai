@@ -1,4 +1,4 @@
-# confirm_perp_transfer 参数详解
+# confirm_perp_transfer
 
 ## 概述
 

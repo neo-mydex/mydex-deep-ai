@@ -1,4 +1,4 @@
-# confirm_perp_close_position 参数详解
+# confirm_perp_close_position
 
 ## 概述
 

@@ -28,7 +28,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 ### 开仓 (confirm_perp_open_order)
 
 - **约束**：每轮对话只能开一个 coin，多个意图时按 coin 名升序选第一个
-- **参数来源**：参考 [confirm_perp_open_order 参数详解](resources/open-position.md)
+- **参数来源**：参考 [confirm_perp_open_order 参数详解](resources/confirm_perp_open_order.md)
 - **必填参数**：coin、leverage、usdc_size、side
 - **可选参数**：tp/sl（价格）、tp_ratio/sl_ratio（比例）、order_type、entry_price、margin_mode
 - **参数不全时**：主动追问用户，不自行查询
@@ -37,13 +37,13 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 
 - **前置检查**：调用 `view_position` 获取用户当前仓位信息（coin、position_side、position_size、mark_price）
 - **约束**：无，每轮可批量平多个 coin
-- **参数来源**：参考 [confirm_perp_close_position 参数详解](resources/close-position.md)
+- **参数来源**：参考 [confirm_perp_close_position 参数详解](resources/confirm_perp_close_position.md)
 - **必填参数**：closes（list，含 coin、position_side、position_size）
 - **参数不全时**：主动追问用户，不自行查询
 
 ### 资金划转 (confirm_perp_transfer)
 
-- **参数来源**：参考 [confirm_perp_transfer 参数详解](resources/transfer.md)
+- **参数来源**：参考 [confirm_perp_transfer 参数详解](resources/confirm_perp_transfer.md)
 - **必填参数**：action_type（PERPS_DEPOSIT / PERPS_WITHDRAW）、amount
 - **参数不全时**：主动追问用户，不自行查询
 
@@ -85,6 +85,6 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 
 # Resources
 
-- [开仓参数详解](resources/open-position.md)
-- [平仓参数详解](resources/close-position.md)
-- [划转参数详解](resources/transfer.md)
+- [confirm_perp_open_order 参数详解](resources/confirm_perp_open_order.md)
+- [confirm_perp_close_position 参数详解](resources/confirm_perp_close_position.md)
+- [confirm_perp_transfer 参数详解](resources/confirm_perp_transfer.md)
