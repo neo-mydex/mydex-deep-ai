@@ -10,7 +10,7 @@ load_dotenv()
 from deepagents import create_deep_agent
 from src.config.agent_backend import BACKEND, SKILL_DIR
 from src.config.agent_context import ChatContext
-from src.config.agent_llms import GPT_54
+from src.config.agent_llms import GPT_54,GEMINI_3F
 from src.config.agent_prompts import SYSTEM_PROMPT
 from src.config.agent_tools import AGENT_TOOLS
 
@@ -31,7 +31,7 @@ if __name__ == "__main__":
             "messages": [
                 {
                     "role": "user",
-                    "content": "我的sol钱包地址是？",
+                    "content": "你有什么skill？",
                 }
             ]
         },

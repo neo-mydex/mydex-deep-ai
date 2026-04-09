@@ -134,36 +134,46 @@ uv run python -m src.services.privy.cli profile --jwt <token>
 
 ---
 
-## card 模块
+## action 模块
 
-card 模块不通过命令行运行，作为 Python 模块被 Agent 调用。
+action 模块为 Hyperliquid 交易卡片工具（5.1-5.11 规范），每个 tool 返回 `{"ok": bool, "action_card": {...}}` 结构。
+
+> **stub** 标记的 tool 尚未实现，调用会抛出 `NotImplementedError`。
+
+```bash
+uv run python -m src.tools.action.action_open_order
+uv run python -m src.tools.action.action_close_position
+uv run python -m src.tools.action.action_tpsl
+uv run python -m src.tools.action.action_leverage
+uv run python -m src.tools.action.action_view_position
+```
 
 ```python
-from src.tools.card import (
-    build_open_long_params,
-    build_open_short_params,
-    action_open_position,
-    build_close_position_params,
-    action_close_position,
-    build_set_tpsl_params,
-    action_set_tpsl,
-    build_update_leverage_params,
-    action_update_leverage,
-    build_view_position_params,
-    action_view_position,
+from src.tools.action import (
+    open_long_order,
+    open_short_order,
+    close_position,
+    set_tpsl,
+    update_leverage,
+    view_position,
 )
 ```
 
 ### Action Card 类型
 
-| Card | 说明 | 关键参数 |
-|------|------|----------|
-| `OPEN_LONG` | 开多 | `coin`, `usdc_size`, `leverage`, `tp/sl` |
-| `OPEN_SHORT` | 开空 | `coin`, `usdc_size`, `leverage`, `tp/sl` |
-| `CLOSE_POSITION` | 平仓 | `coin`, `close_mode` |
-| `SET_TPSL` | 设置止盈止损 | `coin`, `tp`, `sl` |
-| `UPDATE_LEVERAGE` | 更新杠杆 | `coin`, `leverage`, `margin_mode` |
-| `VIEW_POSITION` | 查看仓位 | `coin`, `include_open_orders` |
+| Tool 函数 | Card action | 说明 | 关键参数 |
+|-----------|-------------|------|----------|
+| `open_long_order` | OPEN_LONG | 开多仓 | `coin`, `usdc_size`, `leverage`, `tp/sl`, `tp_ratio/sl_ratio` |
+| `open_short_order` | OPEN_SHORT | 开空仓 | `coin`, `usdc_size`, `leverage`, `tp/sl`, `tp_ratio/sl_ratio` |
+| `close_position` | CLOSE_POSITION | 平仓 | `coin`, `position_side`, `position_size`, `close_ratio` |
+| `set_tpsl` | SET_TPSL | 设置止盈止损 | `coin`, `position_side`, `tp_price/sl_price`, `tp_ratio/sl_ratio` |
+| `update_leverage` | UPDATE_LEVERAGE | 更新杠杆 | `coin`, `leverage`, `margin_mode` |
+| `view_position` | VIEW_POSITION | 查看仓位 | `coin`, `user_address`, `include_open_orders`, `include_tpsl` |
+| `perp_deposit` | PERPS_DEPOSIT | 合约充值 | `amount`, `asset` **(stub)** |
+| `perp_withdraw` | PERPS_WITHDRAW | 合约提款 | `amount`, `asset` **(stub)** |
+| `view_hist_position` | VIEW_HIST_POSITION | 查看历史仓位 | `coin`, `user_address` **(stub)** |
+| `view_open_order` | VIEW_OPEN_ORDER | 查看当前挂单 | `coin`, `user_address` **(stub)** |
+| `cancel_open_order` | CANCEL_OPEN_ORDER | 取消挂单 | `coin`, `oid`, `user_address` **(stub)** |
 
 ---
 
