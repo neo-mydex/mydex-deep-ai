@@ -12,7 +12,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | 意图关键词 | Tool | 说明 |
 |-----------|------|------|
 | 做多，做空，开仓，做多 BTC | check_can_open → confirm_perp_open_order | 开仓（先校验可行性） |
-| 平仓，平多头，平空头 | confirm_perp_close_position | 平仓 |
+| 平仓，平多头，平空头 | check_can_close → confirm_perp_close_position | 平仓（先校验可行性） |
 | 转入，转出，存款，提款，往合约 | confirm_perp_transfer | 资金划转 |
 | 止盈，止损，设置 tpsl | confirm_perp_set_tpsl | 止盈止损 |
 | 历史仓位，历史，成交 | show_perp_hist_positions | 查看历史仓位 |
@@ -45,11 +45,15 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 
 ### 平仓 (confirm_perp_close_position)
 
-- **前置检查**：
-  - 用户提及了具体 coin → 调用 `perp_get_positions(address, coin=xxx)` 获取该 coin 的仓位
-  - 用户没有提及 coin → 调用 `perp_get_positions(address)` 获取所有仓位，遍历处理
+- **【强制】前置检查**：必须先调用 `perp_check_can_close` 校验可行性
+  - 若 `ok=false`：根据返回的 `issues` 和 `follow_up_question` 告知用户问题，**禁止继续**
+  - 若 `ok=true`：
+    - 用返回的 `position_info` 填充 `closes` 中的 `position_side`、`position_size`
+    - 用返回的 `close_size`（如有纠正）填充 `close_size` 或 `close_ratio`
+    - 检查 `corrections` 中的强平距离警告，告知用户但不 block
+  - **禁止跳过 check_can_close 直接调用 confirm_perp_close_position**
 - **约束**：无，每轮可批量平多个 coin
-- **参数来源**：参考 [confirm_perp_close_position 参数详解](resources/confirm_perp_close_position.md)
+- **参数来源**：参考 [confirm_perp_close_position 参数详解](resources/confirm_perp_close_position.md)；前置检查参考 [check_can_close 参数详解](resources/check_can_close.md)
 - **必填参数**：closes（list，含 coin、position_side、position_size）
 - **参数不全时**：主动追问用户，不自行查询
 
@@ -115,6 +119,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 |------|------|
 | check_can_open | 开仓前可行性校验（余额、仓位、杠杆、TP/SL 挂单等） |
 | confirm_perp_open_order | 开仓（做多/做空） |
+| check_can_close | 平仓前可行性校验（仓位、主单挂单、强平距离等） |
 | confirm_perp_close_position | 平仓（支持批量平多个 coin） |
 | confirm_perp_transfer | 资金划转（PERPS_DEPOSIT / PERPS_WITHDRAW） |
 | confirm_perp_set_tpsl | 止盈止损 |
@@ -130,6 +135,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 
 # Resources
 
+- [check_can_close 参数详解](resources/check_can_close.md)
 - [check_can_open 参数详解](resources/check_can_open.md)
 - [confirm_perp_open_order 参数详解](resources/confirm_perp_open_order.md)
 - [confirm_perp_close_position 参数详解](resources/confirm_perp_close_position.md)
