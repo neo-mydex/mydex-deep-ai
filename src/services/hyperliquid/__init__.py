@@ -13,6 +13,8 @@ from .info import (
     user_state,
     open_orders,
     frontend_open_orders,
+    user_fills_by_time,
+    query_order_by_oid,
 )
 
 from .normalize import (
@@ -40,6 +42,8 @@ from .cli import (
     evaluate_entry_price,
     check_can_open,
     check_can_close,
+    get_user_fills_by_time,
+    get_order_detail_by_oid,
 )
 
 __all__ = [
@@ -52,6 +56,8 @@ __all__ = [
     "user_state",
     "open_orders",
     "frontend_open_orders",
+    "user_fills_by_time",
+    "query_order_by_oid",
     # normalize
     "Side",
     "OrderType",
@@ -76,4 +82,7 @@ __all__ = [
     "evaluate_entry_price",
     "check_can_open",
     "check_can_close",
+    # historical
+    "get_user_fills_by_time",
+    "get_order_detail_by_oid",
 ]

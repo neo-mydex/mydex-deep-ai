@@ -15,6 +15,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | 平仓，平多头，平空头 | confirm_perp_close_position | 平仓 |
 | 转入，转出，存款，提款，往合约 | confirm_perp_transfer | 资金划转 |
 | 止盈，止损，设置 tpsl | confirm_perp_set_tpsl | 止盈止损 |
+| 历史仓位，历史，成交 | show_hist_positions | 查看历史仓位 |
 | 仓位，持仓，当前，看看 | show_perp_positions | 查看仓位 |
 
 # WORKFLOW
@@ -61,6 +62,12 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - **只设止损**：sl_price 或 sl_ratio 二选一，止盈相关参数全部填 None
 - **参数不全时**：主动追问用户，不自行查询
 
+### 查看历史仓位 (show_hist_positions)
+- **触发场景**："看看我历史仓位"、"历史成交"、"我的历史成交"
+- **参数来源**：调用 `perp_get_hist_orders` 获取历史成交数据，再并发补全订单详情
+- **参数**：coin 可选（用户提及则传，不提及则查所有）
+- **包含信息**：成交时间、币种、方向、盈亏、数量、价格、杠杆等
+
 ### 查看仓位 (show_perp_positions)
 
 - **触发场景**："看看我的 BTC 仓位"、"查看持仓"
@@ -93,6 +100,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | confirm_perp_close_position | 平仓（支持批量平多个 coin） |
 | confirm_perp_transfer | 资金划转（PERPS_DEPOSIT / PERPS_WITHDRAW） |
 | confirm_perp_set_tpsl | 止盈止损 |
+| show_hist_positions | 查看历史仓位 |
 | show_perp_positions | 查看仓位 |
 
 # Anti-Patterns
@@ -107,3 +115,4 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - [confirm_perp_close_position 参数详解](resources/confirm_perp_close_position.md)
 - [confirm_perp_transfer 参数详解](resources/confirm_perp_transfer.md)
 - [confirm_perp_set_tpsl 参数详解](resources/confirm_perp_set_tpsl.md)
+- [show_hist_positions 参数详解](resources/show_hist_positions.md)

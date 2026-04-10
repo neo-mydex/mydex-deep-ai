@@ -95,3 +95,32 @@ def frontend_open_orders(
     info = _build_info(network, timeout=timeout)
     result = info.frontend_open_orders(address=address, dex=dex)
     return result if isinstance(result, list) else []
+
+
+def user_fills_by_time(
+    address: str,
+    start_time: int,
+    end_time: int | None = None,
+    aggregate_by_time: bool = False,
+    network: Network = "mainnet",
+    timeout: float | None = None,
+) -> list[dict]:
+    """获取用户历史成交（Hyperliquid user_fills_by_time）"""
+    info = _build_info(network, timeout=timeout)
+    return info.user_fills_by_time(
+        address=address,
+        start_time=start_time,
+        end_time=end_time,
+        aggregate_by_time=aggregate_by_time,
+    )
+
+
+def query_order_by_oid(
+    address: str,
+    oid: int,
+    network: Network = "mainnet",
+    timeout: float | None = None,
+) -> dict | None:
+    """根据 oid 查询单个订单详情（Hyperliquid query_order_by_oid）"""
+    info = _build_info(network, timeout=timeout)
+    return info.query_order_by_oid(user=address, oid=oid)

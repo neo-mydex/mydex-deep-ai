@@ -17,6 +17,8 @@ from .info import (
     user_state,
     open_orders,
     frontend_open_orders,
+    user_fills_by_time,
+    query_order_by_oid,
 )
 from .normalize import (
     normalize_intent,
@@ -902,5 +904,74 @@ def check_can_close(
             "close_size": actual_close_size,
         },
     }
+
+
+# ============================================================================
+# 历史成交与订单查询
+# ============================================================================
+
+
+def get_user_fills_by_time(
+    address: str,
+    start_time: int,
+    end_time: int | None = None,
+    aggregate_by_time: bool = False,
+    network: Network = "mainnet",
+    timeout: float | None = None,
+) -> dict[str, Any]:
+    """
+    获取用户历史成交记录（给 Agent 用的标准化返回）
+
+    返回结构:
+    {
+        "ok": bool,
+        "address": str,
+        "network": str,
+        "fills": [list of fill dicts from user_fills_by_time]
+    }
+    """
+    fills = user_fills_by_time(
+        address=address,
+        start_time=start_time,
+        end_time=end_time,
+        aggregate_by_time=aggregate_by_time,
+        network=network,
+        timeout=timeout,
+    )
+    return {
+        "ok": True,
+        "address": address,
+        "network": network,
+        "fills": fills if isinstance(fills, list) else [],
+    }
+
+
+def get_order_detail_by_oid(
+    address: str,
+    oid: int,
+    network: Network = "mainnet",
+    timeout: float | None = None,
+) -> dict[str, Any]:
+    """
+    根据 oid 查询订单详情（给 Agent 用的标准化返回）
+
+    返回结构:
+    {
+        "ok": bool,
+        "oid": int,
+        "coin": str | None,
+        "side": str | None,
+        "sz": str | None,
+        "px": str | None,
+        "orderType": str | None,
+        "reduceOnly": bool | None,
+        "timestamp": int | None,
+        "closedPnl": str | None,
+    }
+    """
+    raw = query_order_by_oid(address=address, oid=oid, network=network, timeout=timeout)
+    if raw is None:
+        return {"ok": False, "oid": oid}
+    return {"ok": True, **raw}
 
 
