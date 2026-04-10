@@ -638,119 +638,154 @@ def check_can_close(
     address: str,
     coin: str,
     close_size: float | None = None,
+    close_size_in_usdc: float | None = None,
+    close_ratio: float | None = None,
     network: Network = "mainnet",
     timeout: float | None = None,
 ) -> dict[str, Any]:
     """检查是否可以平仓"""
     issues: list[dict[str, Any]] = []
-    follow_up_parts: list[str] = []
+    corrections: list[str] = []
 
+    # 1. 仓位查询
     position_check = get_user_position(
-        address=address,
-        coin=coin,
-        network=network,
-        timeout=timeout,
+        address=address, coin=coin, network=network, timeout=timeout,
     )
 
     if not position_check["ok"]:
-        issues.append({
-            "code": "query_failed",
-            "message": "查询仓位失败",
-            "detail": position_check,
-        })
         return {
             "ok": False,
+            "has_position": False,
+            "position_side": "flat",
+            "position_size": None,
+            "close_size": None,
+            "close_size_in_usdc": None,
+            "close_ratio": None,
+            "corrections": [],
+            "issues": [{"code": "query_failed", "message": "查询仓位失败"}],
             "follow_up_question": "查询失败，请稍后重试",
-            "issues": issues,
-            "checks": {"position": position_check},
-            "position_info": None,
         }
 
-    if not position_check["has_position"]:
-        issues.append({
-            "code": "no_position",
-            "message": f"没有 {coin} 的仓位，无需平仓",
-            "detail": position_check,
-        })
-
-    open_orders_check = get_user_open_orders(
-        address=address,
-        coin=coin,
-        network=network,
-        timeout=timeout,
-    )
-    if open_orders_check["has_open_orders"]:
-        issues.append({
-            "code": "has_open_orders",
-            "message": f"有 {open_orders_check['open_order_count']} 个 {coin} 挂单，请先撤销",
-            "detail": open_orders_check,
-        })
-
-    market_check = get_market_price(
-        coin=coin,
-        network=network,
-        timeout=timeout,
-    )
-    if not market_check["ok"] or market_check["mark_price"] is None:
-        issues.append({
-            "code": "price_unavailable",
-            "message": "无法获取市场价格",
-            "detail": market_check,
-        })
-
+    has_position = position_check.get("has_position", False)
+    position_side = position_check.get("position_side", "flat")
     position_size = position_check.get("position_size") or 0
-    if close_size is None:
-        actual_close_size = abs(position_size)
+
+    # 2. 市场价格
+    market_check = get_market_price(coin=coin, network=network, timeout=timeout)
+    mark_price = market_check.get("mark_price")
+
+    if not market_check["ok"] or mark_price is None:
+        issues.append({"code": "price_unavailable", "message": "无法获取市场价格"})
+        return _build_close_response(
+            ok=False, has_position=has_position, position_side=position_side,
+            position_size=position_size, close_size=None, close_size_in_usdc=None,
+            close_ratio=None, corrections=corrections, issues=issues,
+        )
+
+    # 3. 三输入换算逻辑（由 CanCloseInput 保证三选一）
+    # 注意：service 层不做校验，校验在 tool 层 CanCloseInput 中完成
+    actual_close_size: float | None = None
+    actual_close_usdc: float | None = None
+    actual_close_ratio: float | None = None
+
+    if close_ratio is not None:
+        # 比例模式：基于持仓量计算，输入比例直接保留
+        actual_close_ratio = round(close_ratio, 9)
+        actual_close_size = round(abs(position_size) * close_ratio, 9)
+        actual_close_usdc = round(actual_close_size * mark_price, 9) if mark_price > 0 else None
+    elif close_size is not None:
+        # 张数模式
+        actual_close_size = close_size
+        actual_close_usdc = round(close_size * mark_price, 9)
+        actual_close_ratio = round(close_size / abs(position_size), 9) if position_size != 0 else None
+    elif close_size_in_usdc is not None:
+        # USDC 价值模式
+        actual_close_usdc = close_size_in_usdc
+        actual_close_size = round(close_size_in_usdc / mark_price, 9) if mark_price > 0 else None
+        actual_close_ratio = round(actual_close_size / abs(position_size), 9) if position_size != 0 else None
     else:
-        try:
-            actual_close_size = float(close_size)
-            if actual_close_size <= 0:
-                follow_up_parts.append("平仓数量必须 > 0")
-                actual_close_size = abs(position_size)
-            elif position_size != 0 and actual_close_size > abs(position_size):
-                follow_up_parts.append(f"平仓数量不能超过持仓量({abs(position_size)})，将全平")
-                actual_close_size = abs(position_size)
-        except (TypeError, ValueError):
+        # 不传：默认全平
+        actual_close_size = round(abs(position_size), 9)
+        actual_close_usdc = round(abs(position_size) * mark_price, 9) if mark_price > 0 else None
+        actual_close_ratio = 1.0
+
+    # 4. 平仓量超限检查
+    if actual_close_size is not None and position_size != 0:
+        if abs(actual_close_size) > abs(position_size):
+            corrections.append(f"平仓量 {actual_close_size} > 持仓量 {position_size}，已裁剪为全平")
             actual_close_size = abs(position_size)
+            actual_close_usdc = round(abs(position_size) * mark_price, 9) if mark_price > 0 else None
+            actual_close_ratio = 1.0
+        if actual_close_size <= 0:
+            issues.append({"code": "invalid_close_size", "message": "平仓数量必须 > 0"})
+            actual_close_size = None
+            actual_close_usdc = None
+            actual_close_ratio = None
 
-    if actual_close_size > 0 and position_check["has_position"]:
+    # 5. 无仓位检查
+    if not has_position:
+        issues.append({"code": "no_position", "message": f"没有 {coin} 的仓位，无需平仓"})
+
+    # 6. 挂单检查（TPSL 除外）
+    open_orders_result = get_user_open_orders(
+        address=address, coin=coin, network=network, timeout=timeout,
+    )
+    main_orders = [
+        o for o in open_orders_result.get("orders", [])
+        if not _is_tpsl_order(o) and not o.get("reduceOnly", False)
+    ]
+    if main_orders:
+        issues.append({"code": "has_open_orders", "message": f"有 {len(main_orders)} 个未成交主单，请先撤销"})
+
+    # 7. 强平距离检查 → corrections（不 block）
+    if actual_close_size is not None and actual_close_size > 0 and has_position:
         liq_px = position_check.get("liquidation_px")
-        mark_px = market_check.get("mark_price")
-
-        if liq_px is not None and mark_px is not None:
-            position_side = position_check["position_side"]
-
+        if liq_px is not None and mark_price is not None:
             if position_side == "long":
-                distance_ratio = (mark_px - liq_px) / mark_px if mark_px > 0 else None
+                distance_ratio = (mark_price - liq_px) / mark_price if mark_price > 0 else None
             else:
-                distance_ratio = (liq_px - mark_px) / mark_px if mark_px > 0 else None
+                distance_ratio = (liq_px - mark_price) / mark_price if mark_price > 0 else None
 
             if distance_ratio is not None and distance_ratio < 0.1:
-                issues.append({
-                    "code": "near_liquidation",
-                    "message": f"仓位接近强平价格，距离 {distance_ratio:.1%}",
-                    "detail": {
-                        "liquidation_px": liq_px,
-                        "mark_px": mark_px,
-                        "distance_ratio": distance_ratio,
-                    },
-                })
+                corrections.append(f"仓位接近强平价格，距离 {distance_ratio:.1%}，请留意")
 
+    return _build_close_response(
+        ok=len(issues) == 0,
+        has_position=has_position,
+        position_side=position_side,
+        position_size=position_size,
+        close_size=actual_close_size,
+        close_size_in_usdc=actual_close_usdc,
+        close_ratio=actual_close_ratio,
+        corrections=corrections,
+        issues=issues,
+    )
+
+
+def _build_close_response(
+    ok: bool,
+    has_position: bool,
+    position_side: str,
+    position_size: float,
+    close_size: float | None,
+    close_size_in_usdc: float | None,
+    close_ratio: float | None,
+    corrections: list[str],
+    issues: list[dict[str, Any]],
+    follow_up_question: str = "",
+) -> dict[str, Any]:
+    """构建统一返回结构"""
     return {
-        "ok": len(issues) == 0,
-        "follow_up_question": " ".join(follow_up_parts),
+        "ok": ok,
+        "has_position": has_position,
+        "position_side": position_side,
+        "position_size": position_size,
+        "close_size": close_size,
+        "close_size_in_usdc": close_size_in_usdc,
+        "close_ratio": close_ratio,
+        "corrections": corrections,
         "issues": issues,
-        "checks": {
-            "position": position_check,
-            "open_orders": open_orders_check,
-            "market": market_check,
-        },
-        "position_info": {
-            "has_position": position_check["has_position"],
-            "position_side": position_check["position_side"],
-            "position_size": position_check["position_size"],
-            "close_size": actual_close_size,
-        },
+        "follow_up_question": follow_up_question,
     }
 
 

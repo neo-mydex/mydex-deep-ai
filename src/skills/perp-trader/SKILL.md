@@ -32,14 +32,14 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - **【强制】第一步**：必须先调用 `perp_check_can_open` 校验可行性
   - 若 `ok=false`：根据返回的 `issues` 和 `follow_up_question` 告知用户问题，**禁止继续**
   - 若 `ok=true`：
-    - `is_add=true`（补仓）：杠杆自动纠正为已有仓位的杠杆，用 `corrected_leverage`
-    - `is_add=false`（开新仓）：杠杆超限时自动降为 `max_allowed`，用 `corrected_leverage`
-    - 调用 `confirm_perp_open_order` 时传 `is_add` 和纠正后的 `leverage=corrected_leverage`
+    - `is_add=true`（补仓）：杠杆自动纠正为已有仓位的杠杆，用 `leverage_to_use`
+    - `is_add=false`（开新仓）：杠杆超限时自动降为 `max_allowed`，用 `leverage_to_use`
+    - 调用 `confirm_perp_open_order` 时传 `is_add` 和纠正后的 `leverage=leverage_to_use`
   - **禁止跳过 check_can_open 直接调用 confirm_perp_open_order**
-  - **禁止用用户原始杠杆值，必须用 `corrected_leverage`**
+  - **禁止用用户原始杠杆值，必须用 `leverage_to_use`**
 - **约束**：每轮对话只能开一个 coin，多个意图时按 coin 名升序选第一个
-- **参数来源**：`check_can_open` 返回的 `normalized_intent` 和 `corrected_leverage`；参考 [confirm_perp_open_order 参数详解](resources/confirm_perp_open_order.md)
-- **必填参数**：coin、leverage（必须用 corrected_leverage）、usdc_size、side、is_add
+- **参数来源**：`check_can_open` 返回的 `leverage_to_use`、`usdc_margin`、`coin_size`；参考 [confirm_perp_open_order 参数详解](resources/confirm_perp_open_order.md)
+- **必填参数**：coin、leverage（必须用 leverage_to_use）、usdc_margin/coin_size（由用户原始输入决定）、side、is_add
 - **可选参数**：tp/sl（价格）、tp_ratio/sl_ratio（比例）、order_type、entry_price、margin_mode
 - **参数不全时**：主动追问用户，不自行查询
 
@@ -48,8 +48,8 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - **【强制】前置检查**：必须先调用 `perp_check_can_close` 校验可行性
   - 若 `ok=false`：根据返回的 `issues` 和 `follow_up_question` 告知用户问题，**禁止继续**
   - 若 `ok=true`：
-    - 用返回的 `position_info` 填充 `closes` 中的 `position_side`、`position_size`
-    - 用返回的 `close_size`（如有纠正）填充 `close_size` 或 `close_ratio`
+    - 用返回的顶层字段 `position_side`、`position_size` 填充 `closes`
+    - 用返回的 `close_size` / `close_size_in_usdc` / `close_ratio` 填充平仓参数
     - 检查 `corrections` 中的强平距离警告，告知用户但不 block
   - **禁止跳过 check_can_close 直接调用 confirm_perp_close_position**
 - **约束**：无，每轮可批量平多个 coin

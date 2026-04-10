@@ -43,7 +43,7 @@ def confirm_perp_open_order_impl(
     leverage: float,
     usdc_size: float,
     side: Literal["long", "short"],
-    is_adding: bool = False,
+    is_add: bool = False,
     margin_mode: Literal["cross", "isolated"] = "cross",
     order_type: Literal["market", "limit"] = "market",
     entry_price: float | None = None,
@@ -75,7 +75,7 @@ def confirm_perp_open_order_impl(
     execution_plan: list[dict] = []
 
     # 只有开新仓才需要 UPDATE_LEVERAGE，补仓不需要
-    if not is_adding:
+    if not is_add:
         execution_plan.append({
             "intent": "UPDATE_LEVERAGE",
             "coin": coin.upper(),
@@ -134,7 +134,7 @@ def confirm_perp_open_order(
     leverage: float,
     usdc_size: float,
     side: Literal["long", "short"],
-    is_adding: bool = False,
+    is_add: bool = False,
     margin_mode: Literal["cross", "isolated"] = "cross",
     order_type: Literal["market", "limit"] = "market",
     entry_price: float | None = None,
@@ -154,14 +154,14 @@ def confirm_perp_open_order(
     - "做空 ETH 10x 500u" → coin="ETH", leverage=10, usdc_size=500, side="short"
     - "做多 BTC 20x 1000u，止盈 72000，止损 66500" → tp=72000, sl=66500
     - "做多 BTC 10x 1000u，止盈30%" → tp_ratio=0.3
-    - "补仓 BTC 100u" → is_adding=True, coin="BTC", usdc_size=100
+    - "补仓 BTC 100u" → is_add=True, coin="BTC", usdc_size=100
     """
     return confirm_perp_open_order_impl(
         coin=coin,
         leverage=leverage,
         usdc_size=usdc_size,
         side=side,
-        is_adding=is_adding,
+        is_add=is_add,
         margin_mode=margin_mode,
         order_type=order_type,
         entry_price=entry_price,

@@ -9,7 +9,7 @@
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | coin | str | 币种名称，如 "BTC"、"ETH" |
-| leverage | float | 杠杆倍数（必须用 check_can_open 返回的 corrected_leverage） |
+| leverage | float | 杠杆倍数（必须用 check_can_open 返回的 leverage_to_use） |
 | usdc_size | float | 投入的 USDC 数量，如 1000 表示 1000 USDC |
 | side | Literal["long", "short"] | "long"=做多，"short"=做空 |
 | is_add | bool | false=开新仓，true=补仓（由 check_can_open 推断） |

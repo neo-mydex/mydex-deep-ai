@@ -10,12 +10,15 @@
 - 平仓数量是否有效
 - 仓位是否接近强平价格（correction 警告，不 block）
 
-## 与 check_can_open 的类比
+## 三选一输入模式
 
-| | check_can_open | check_can_close |
-|---|---|---|
-| 前置于 | confirm_perp_open_order | confirm_perp_close_position |
-| 检查重点 | 余额、杠杆、TP/SL 挂单 | 仓位、主单挂单、强平距离 |
+| 参数 | 说明 | 示例 |
+|------|------|------|
+| close_size | 币本位张数 | 0.5 BTC |
+| close_size_in_usdc | USDC 价值 | 34000 USDC |
+| close_ratio | 0-1 比例 | 0.3 = 平 30% |
+
+⚠️ 三者**只能指定其一**，不可同时传入。
 
 ## 参数表
 
@@ -23,34 +26,35 @@
 |------|------|------|
 | address | str | 用户钱包地址 |
 | coin | str | 币种名称，如 "BTC"、"ETH" |
-| close_size | float \| None | 平仓数量（不传则全部平仓） |
+| close_size | float \| None | 平仓数量（币本位） |
+| close_size_in_usdc | float \| None | 平仓价值（USDC） |
+| close_ratio | float \| None | 平仓比例（0-1） |
 | network | str | 网络类型，"mainnet" 或 "testnet" |
 
-## 返回字段
+## 返回字段（顶层扁平结构）
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| ok | bool | 所有检查是否通过（issues 为空） |
-| issues | list[dict] | 问题列表，为空则可继续 |
+| ok | bool | 所有检查是否通过 |
+| has_position | bool | 是否有仓位 |
+| position_side | Literal["long","short","flat"] | 仓位方向 |
+| position_size | float \| None | 当前持仓量（币本位） |
+| close_size | float \| None | 实际平仓量（币本位） |
+| close_size_in_usdc | float \| None | 实际平仓量（USDC） |
+| close_ratio | float \| None | 实际平仓比例 |
+| corrections | list[str] | 警告/纠正信息（非 block） |
+| issues | list[dict] | 问题列表（block） |
 | follow_up_question | str | 给用户的后续问题 |
-| corrections | list[str] | 警告信息（如强平距离），不 block |
-| checks.position | dict | 仓位查询结果 |
-| checks.open_orders | dict | 挂单查询结果 |
-| checks.market | dict | 市场价格查询结果 |
-| position_info.has_position | bool | 是否有仓位 |
-| position_info.position_side | Literal["long", "short", "flat"] | 仓位方向 |
-| position_info.position_size | float \| None | 仓位大小 |
-| position_info.close_size | float | 实际平仓数量 |
 
-## issues code 说明
+## issues code 说明（block）
 
-| code | 说明 | 是否 block |
-|------|------|------------|
-| `query_failed` | 查询仓位失败 | ✅ |
-| `price_unavailable` | 无法获取市场价格 | ✅ |
-| `no_position` | 没有仓位，无需平仓 | ✅ |
-| `has_open_orders` | 有未撤销主单，需先撤销 | ✅ |
-| `invalid_close_size` | 平仓数量无效 | ✅ |
+| code | 说明 |
+|------|------|
+| `query_failed` | 查询仓位失败 |
+| `price_unavailable` | 无法获取市场价格 |
+| `no_position` | 没有仓位，无需平仓 |
+| `has_open_orders` | 有未撤销主单，需先撤销 |
+| `invalid_close_size` | 平仓数量 <= 0 |
 
 ## corrections 说明（非 block）
 
@@ -61,14 +65,18 @@
 
 ## 使用示例
 
-**全部平仓前检查：**
-```python
-perp_check_can_close(address="0x...", coin="BTC")
-# 若 ok=true，调用 confirm_perp_close_position
+**指定张数平仓：**
+```
+perp_check_can_close(address="0x...", coin="BTC", close_size=0.5)
 ```
 
-**部分平仓前检查：**
-```python
-perp_check_can_close(address="0x...", coin="BTC", close_size=0.5)
-# 若 ok=true，用返回的 close_size 调用 confirm_perp_close_position
+**指定 USDC 价值平仓：**
+```
+perp_check_can_close(address="0x...", coin="BTC", close_size_in_usdc=5000)
+```
+
+**指定比例平仓：**
+```
+perp_check_can_close(address="0x...", coin="BTC", close_ratio=0.3)
+# 平 30% 的仓位
 ```

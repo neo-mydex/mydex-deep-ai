@@ -14,6 +14,7 @@ OrderType = Literal["market", "limit"]
 
 class CanOpenInput(BaseModel):
     """perp_check_can_open 输入参数校验"""
+    address: str
     coin: str
     side: Side
     usdc_margin: float | None = Field(default=None, ge=0)  # USDC 保证金
@@ -24,9 +25,13 @@ class CanOpenInput(BaseModel):
     network: Network = "mainnet"
 
     @model_validator(mode="after")
-    def check_at_least_one_size(self) -> "CanOpenInput":
+    def check_exactly_one_size(self) -> "CanOpenInput":
         if self.usdc_margin is None and self.coin_size is None:
             raise ValueError("usdc_margin 和 coin_size 至少需要提供一个")
+        if self.usdc_margin is not None and self.coin_size is not None:
+            raise ValueError("usdc_margin 和 coin_size 二选一，不可同时指定")
+        if self.leverage is None or self.leverage <= 0:
+            raise ValueError("leverage 必须 > 0")
         if self.usdc_margin is not None and self.usdc_margin <= 0:
             raise ValueError("usdc_margin 必须 > 0")
         if self.coin_size is not None and self.coin_size <= 0:
@@ -37,7 +42,7 @@ class CanOpenInput(BaseModel):
 class CanOpenResponse(BaseModel):
     """perp_check_can_open 返回格式"""
     ok: bool
-    is_adding: bool = False  # True=补仓（加仓），False=开新仓
+    is_add: bool = False  # True=补仓（加仓），False=开新仓
     leverage_to_use: float | None = None  # 实际使用的杠杆
     coin_size: float | None = None   # 实际下单的合约张数（币本位）
     usdc_margin: float | None = None    # 实际使用的保证金
@@ -58,6 +63,18 @@ def perp_check_can_open_impl(
     network: Network = "mainnet",
 ) -> dict:
     """开仓前检查（纯函数，可直接测试）"""
+    # 参数校验
+    CanOpenInput(
+        address=address,
+        coin=coin,
+        side=side,
+        usdc_margin=usdc_margin,
+        coin_size=coin_size,
+        leverage=leverage,
+        order_type=order_type,
+        entry_price=entry_price,
+        network=network,
+    )
     result = service_check_can_open(
         address=address,
         coin=coin,
@@ -98,7 +115,7 @@ def perp_check_can_open(
     - 杠杆是否超限（自动纠正）
     - 限价单价格是否偏离过大
 
-    若 ok=true：用返回的 leverage_to_use / position_size / usdc_margin 继续调用 confirm_perp_open_order
+    若 ok=true：用返回的 leverage_to_use / coin_size / usdc_margin 继续调用 confirm_perp_open_order
     若 ok=false：根据 issues 告知用户问题，不调用 confirm
 
     参数:
@@ -115,7 +132,7 @@ def perp_check_can_open(
     返回:
         CanOpenResponse: {
             "ok": bool,
-            "is_adding": bool,
+            "is_add": bool,
             "leverage_to_use": float,
             "coin_size": float,
             "usdc_margin": float,
