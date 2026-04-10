@@ -11,7 +11,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 
 | 意图关键词 | Tool | 说明 |
 |-----------|------|------|
-| 做多，做空，开仓，做多 BTC | confirm_perp_open_order | 开仓 |
+| 做多，做空，开仓，做多 BTC | check_can_open → confirm_perp_open_order | 开仓（先校验可行性） |
 | 平仓，平多头，平空头 | confirm_perp_close_position | 平仓 |
 | 转入，转出，存款，提款，往合约 | confirm_perp_transfer | 资金划转 |
 | 止盈，止损，设置 tpsl | confirm_perp_set_tpsl | 止盈止损 |
@@ -28,9 +28,17 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 
 ### 开仓 (confirm_perp_open_order)
 
+- **【强制】第一步**：必须先调用 `perp_check_can_open` 校验可行性
+  - 若 `ok=false`：根据返回的 `issues` 和 `follow_up_question` 告知用户问题，**禁止继续**
+  - 若 `ok=true`：
+    - `is_add=true`（补仓）：杠杆自动纠正为已有仓位的杠杆，用 `corrected_leverage`
+    - `is_add=false`（开新仓）：杠杆超限时自动降为 `max_allowed`，用 `corrected_leverage`
+    - 调用 `confirm_perp_open_order` 时传 `is_add` 和纠正后的 `leverage=corrected_leverage`
+  - **禁止跳过 check_can_open 直接调用 confirm_perp_open_order**
+  - **禁止用用户原始杠杆值，必须用 `corrected_leverage`**
 - **约束**：每轮对话只能开一个 coin，多个意图时按 coin 名升序选第一个
-- **参数来源**：参考 [confirm_perp_open_order 参数详解](resources/confirm_perp_open_order.md)
-- **必填参数**：coin、leverage、usdc_size、side
+- **参数来源**：`check_can_open` 返回的 `normalized_intent` 和 `corrected_leverage`；参考 [confirm_perp_open_order 参数详解](resources/confirm_perp_open_order.md)
+- **必填参数**：coin、leverage（必须用 corrected_leverage）、usdc_size、side、is_add
 - **可选参数**：tp/sl（价格）、tp_ratio/sl_ratio（比例）、order_type、entry_price、margin_mode
 - **参数不全时**：主动追问用户，不自行查询
 
@@ -96,6 +104,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 
 | Tool | 用途 |
 |------|------|
+| check_can_open | 开仓前可行性校验（余额、仓位、杠杆、TP/SL 挂单等） |
 | confirm_perp_open_order | 开仓（做多/做空） |
 | confirm_perp_close_position | 平仓（支持批量平多个 coin） |
 | confirm_perp_transfer | 资金划转（PERPS_DEPOSIT / PERPS_WITHDRAW） |
@@ -111,6 +120,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 
 # Resources
 
+- [check_can_open 参数详解](resources/check_can_open.md)
 - [confirm_perp_open_order 参数详解](resources/confirm_perp_open_order.md)
 - [confirm_perp_close_position 参数详解](resources/confirm_perp_close_position.md)
 - [confirm_perp_transfer 参数详解](resources/confirm_perp_transfer.md)

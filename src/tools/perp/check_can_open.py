@@ -4,7 +4,7 @@
 
 from typing import Any, Literal
 from langchain_core.tools import tool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from src.services.hyperliquid import check_can_open as service_check_can_open
 
 Network = Literal["mainnet", "testnet"]
@@ -12,48 +12,62 @@ Side = Literal["long", "short"]
 OrderType = Literal["market", "limit"]
 
 
-class CanOpenChecks(BaseModel):
-    """开仓检查的各项结果"""
-    balance: dict[str, Any] = Field(default_factory=dict)
-    position: dict[str, Any] = Field(default_factory=dict)
-    market: dict[str, Any] = Field(default_factory=dict)
-    leverage: dict[str, Any] = Field(default_factory=dict)
-    open_orders: dict[str, Any] = Field(default_factory=dict)
-    entry_price: dict[str, Any] = Field(default_factory=dict)
+class CanOpenInput(BaseModel):
+    """perp_check_can_open 输入参数校验"""
+    coin: str
+    side: Side
+    usdc_margin: float | None = Field(default=None, ge=0)  # USDC 保证金
+    coin_size: float | None = Field(default=None, ge=0)    # 币本位头寸
+    leverage: float | None = Field(default=None, ge=0)
+    order_type: OrderType = "market"
+    entry_price: float | None = None
+    network: Network = "mainnet"
+
+    @model_validator(mode="after")
+    def check_at_least_one_size(self) -> "CanOpenInput":
+        if self.usdc_margin is None and self.coin_size is None:
+            raise ValueError("usdc_margin 和 coin_size 至少需要提供一个")
+        if self.usdc_margin is not None and self.usdc_margin <= 0:
+            raise ValueError("usdc_margin 必须 > 0")
+        if self.coin_size is not None and self.coin_size <= 0:
+            raise ValueError("coin_size 必须 > 0")
+        return self
 
 
 class CanOpenResponse(BaseModel):
     """perp_check_can_open 返回格式"""
     ok: bool
-    missing_fields: list[str] = Field(default_factory=list)
-    follow_up_question: str = ""
+    is_adding: bool = False  # True=补仓（加仓），False=开新仓
+    leverage_to_use: float | None = None  # 实际使用的杠杆
+    coin_size: float | None = None   # 实际下单的合约张数（币本位）
+    usdc_margin: float | None = None    # 实际使用的保证金
+    corrections: list[str] = Field(default_factory=list)
     issues: list[dict[str, Any]] = Field(default_factory=list)
-    checks: CanOpenChecks = Field(default_factory=CanOpenChecks)
-    normalized_intent: dict[str, Any] = Field(default_factory=dict)
+    follow_up_question: str = ""
 
 
 def perp_check_can_open_impl(
     address: str,
-    coin: str | None = None,
-    side: Side | None = None,
-    size: float | None = None,
+    coin: str,
+    side: Side,
+    usdc_margin: float | None = None,
+    coin_size: float | None = None,
     leverage: float | None = None,
     order_type: OrderType = "market",
     entry_price: float | None = None,
     network: Network = "mainnet",
-    intent: dict[str, Any] | None = None,
 ) -> dict:
     """开仓前检查（纯函数，可直接测试）"""
     result = service_check_can_open(
         address=address,
         coin=coin,
         side=side,
-        size=size,
+        usdc_margin=usdc_margin,
+        coin_size=coin_size,
         leverage=leverage,
         order_type=order_type,
         entry_price=entry_price,
         network=network,
-        intent=intent,
     )
     return CanOpenResponse.model_validate(result).model_dump()
 
@@ -61,61 +75,76 @@ def perp_check_can_open_impl(
 @tool
 def perp_check_can_open(
     address: str,
-    coin: str | None = None,
-    side: Side | None = None,
-    size: float | None = None,
+    coin: str,
+    side: Side,
+    usdc_margin: float | None = None,
+    coin_size: float | None = None,
     leverage: float | None = None,
     order_type: OrderType = "market",
     entry_price: float | None = None,
     network: Network = "mainnet",
-    intent: dict[str, Any] | None = None,
 ) -> CanOpenResponse:
     """
-    检查是否可以开仓。
+    【强制】开仓前必须调用的可行性校验工具。
 
-    在实际开仓前，验证以下条件：
-    - 币种是否在永续合约列表中
-    - 账户是否有可用余额
-    - 是否已有同向或反向仓位
-    - 杠杆是否合法
-    - 是否有挂单需要撤销
-    - 限价单价格是否合理
+    ⚠️ 重要：调用 confirm_perp_open_order 之前，必须先调用本工具。
+    禁止跳过本工具直接调用 confirm_perp_open_order。
+
+    校验内容：
+    - usdc_margin 和 coin_size 至少提供一个，且必须 > 0
+    - 账户可用余额是否充足
+    - 是否有反向仓位（需先平仓）
+    - 是否有未成交主单（非 TPSL）
+    - 杠杆是否超限（自动纠正）
+    - 限价单价格是否偏离过大
+
+    若 ok=true：用返回的 leverage_to_use / position_size / usdc_margin 继续调用 confirm_perp_open_order
+    若 ok=false：根据 issues 告知用户问题，不调用 confirm
 
     参数:
         address: 用户钱包地址
         coin: 币种名称，如 "BTC"、"ETH"
         side: 方向，"long" 或 "short"
-        size: 开仓数量
+        usdc_margin: USDC 保证金（如 1000 = 投入 1000 USDC）
+        coin_size: 币本位头寸（如 0.1 = 0.1 BTC）
         leverage: 杠杆倍数
         order_type: 订单类型，"market" 或 "limit"
         entry_price: 限价单入场价格
         network: 网络类型，"mainnet" 或 "testnet"
-        intent: 意图字典（可选，用于批量传参）
 
     返回:
         CanOpenResponse: {
             "ok": bool,
-            "missing_fields": list[str],
-            "follow_up_question": str,
+            "is_adding": bool,
+            "leverage_to_use": float,
+            "coin_size": float,
+            "usdc_margin": float,
+            "corrections": list[str],
             "issues": list[dict],
-            "checks": CanOpenChecks,
-            "normalized_intent": dict,
+            "follow_up_question": str,
         }
     """
     return perp_check_can_open_impl(
         address=address,
         coin=coin,
         side=side,
-        size=size,
+        usdc_margin=usdc_margin,
+        coin_size=coin_size,
         leverage=leverage,
         order_type=order_type,
         entry_price=entry_price,
         network=network,
-        intent=intent,
     )
 
 
 if __name__ == "__main__":
     from rich import print
-    addr = "0x1234567890abcdef1234567890abcdef12345678"
-    print(perp_check_can_open_impl(address=addr, coin="BTC", side="long", size=0.01, leverage=10))
+    addr = "0x269488c0F8D595CF47aAA91AC6Ef896f9F63cc9E"
+    print(perp_check_can_open_impl(
+        address=addr, 
+        coin="BTC", 
+        side="long", 
+        usdc_margin=5, 
+        leverage=18, 
+        network="mainnet"
+    ))

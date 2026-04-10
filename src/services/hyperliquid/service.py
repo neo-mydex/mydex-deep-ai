@@ -464,163 +464,146 @@ def evaluate_entry_price(
 
 
 def _check_can_open_with_intent(
-    intent: dict[str, Any],
     address: str,
-    network: Network = "mainnet",
-    timeout: float | None = None,
+    coin: str,
+    side: str,
+    usdc_margin: float | None,
+    coin_size: float | None,
+    leverage: float | None,
+    order_type: str,
+    entry_price: float | None,
+    network: Network,
+    timeout: float | None,
 ) -> dict[str, Any]:
+    """开仓前可行性校验，返回精简结果"""
     issues: list[dict[str, Any]] = []
-    follow_up_parts: list[str] = []
+    corrections: list[str] = []
 
-    intent_result = normalize_intent(intent)
-    normalized = intent_result["normalized"]
-
-    if not intent_result["ok"]:
-        missing = intent_result["missing_fields"]
-        if missing:
-            follow_up_parts.append(f"请补充必要字段: {', '.join(missing)}")
-        for field in intent_result["invalid_fields"]:
-            issues.append({
-                "code": f"invalid_{field}",
-                "message": f"字段 {field} 无效或格式错误",
-                "detail": {},
-            })
-
-    if normalized["coin"] is None or normalized["side"] is None or normalized["size"] is None:
+    if not coin or not side or leverage is None:
         return {
             "ok": False,
-            "missing_fields": intent_result["missing_fields"],
-            "follow_up_question": " ".join(follow_up_parts),
-            "issues": issues,
-            "checks": {},
-            "normalized_intent": normalized,
+            "is_adding": False,
+            "leverage_to_use": None,
+            "coin_size": None,
+            "usdc_margin": None,
+            "corrections": [],
+            "follow_up_question": "请提供完整的开仓参数（coin、side、leverage）",
+            "issues": [{"code": "missing_params", "message": "参数不全"}],
         }
 
-    coin = normalized["coin"]
-    side = normalized["side"]
-    leverage = normalized["leverage"]
-    order_type = normalized["order_type"]
-    entry_price = normalized["entry_price"]
+    # 获取市场数据（用于计算）
+    market_price_data = get_market_price(coin=coin, network=network, timeout=timeout)
+    mark_price = market_price_data.get("mark_price")
 
+    # 1. 计算保证金和头寸
+    #    - 有 usdc_margin: size = margin * leverage / price
+    #    - 有 coin_size: margin = size * price / leverage
+    #    - 只有单输入时保留原始值，不做换算（recalculation 仅在双输入时需要）
+    user_provided_both = usdc_margin is not None and coin_size is not None
+    coin_size_val: float | None = None
+    usdc_margin_val: float | None = None
+
+    if user_provided_both and mark_price and mark_price > 0:
+        # 双输入时以 coin_size 为主（仓位是用户实际想要的）
+        coin_size_val = coin_size
+        usdc_margin_val = round(coin_size * mark_price / leverage, 6)
+    elif usdc_margin is not None and mark_price and mark_price > 0:
+        usdc_margin_val = usdc_margin
+    elif coin_size is not None and mark_price and mark_price > 0:
+        coin_size_val = coin_size
+
+    # 2. 余额检查
     balance_check = get_account_balance(
-        address=address,
-        network=network,
-        timeout=timeout,
+        address=address, network=network, timeout=timeout,
     )
-    if balance_check["withdrawable"] <= 0:
+    if usdc_margin_val is not None and balance_check["withdrawable"] < usdc_margin_val:
         issues.append({
             "code": "no_balance",
-            "message": "账户无可用余额",
-            "detail": balance_check,
+            "message": f"可用余额 {balance_check['withdrawable']:.2f} USDC，不足 {usdc_margin_val:.2f} USDC",
         })
 
+    # 3. 仓位检查
     position_check = get_user_position(
-        address=address,
-        coin=coin,
-        network=network,
-        timeout=timeout,
+        address=address, coin=coin, network=network, timeout=timeout,
     )
-    if position_check["has_position"]:
-        existing_side = position_check["position_side"]
-        if existing_side == side:
-            issues.append({
-                "code": "position_exists_same_direction",
-                "message": f"已有 {coin} 的 {side} 仓位，不能同向加仓",
-                "detail": position_check,
-            })
-        else:
-            issues.append({
-                "code": "position_exists_opposite_direction",
-                "message": f"已有 {coin} 的反向仓位({existing_side})，需要先平仓才能开新仓位",
-                "detail": position_check,
-            })
+    has_position = position_check.get("has_position", False)
+    existing_side = position_check.get("position_side")
 
-    coin_info_check = get_coin_info(
-        coin=coin,
-        network=network,
-        timeout=timeout,
-    )
-    if not coin_info_check["ok"] or not coin_info_check["is_listed"]:
+    is_adding = False
+    leverage_to_use = float(leverage)
+
+    if has_position and existing_side == side:
+        # 同向仓位 → 补仓，杠杆必须和已有仓位一致
+        is_adding = True
+        existing_leverage = position_check.get("leverage")
+        if existing_leverage is not None:
+            leverage_to_use = float(existing_leverage)
+            if leverage != leverage_to_use:
+                corrections.append(f"杠杆已纠正为 {leverage_to_use}x（与已有仓位一致）")
+                corrections.append(f"如需使用 {leverage_to_use}x 以外的杠杆，请先平仓再重新开仓")
+            # 补仓时重新计算 coin_size（保证金保留用户原始值）
+            if usdc_margin_val is not None and mark_price and mark_price > 0:
+                # 单输入 usdc_margin：保持原始保证金，杠杆变化自动改变仓位
+                coin_size_val = round(usdc_margin_val * leverage_to_use / mark_price, 6)
+            elif coin_size is not None and usdc_margin_val is None and mark_price and mark_price > 0:
+                # 单输入 coin_size：保持原始仓位，杠杆变化自动改变保证金
+                usdc_margin_val = round(coin_size * mark_price / leverage_to_use, 6)
+    elif has_position and existing_side != side:
+        # 反向仓位 → 报错
+        issues.append({
+            "code": "opposite_position_exists",
+            "message": f"已有 {coin} {existing_side} 仓位，需先平仓再开仓",
+        })
+
+    # 4. 币种和杠杆检查
+    coin_info = get_coin_info(coin=coin, network=network, timeout=timeout)
+    if not coin_info.get("is_listed"):
         issues.append({
             "code": "coin_not_listed",
-            "message": f"{coin} 不在 Hyperliquid 永续合约列表中",
-            "detail": coin_info_check,
+            "message": f"{coin} 不在永续合约列表中",
         })
 
-    leverage_check = {"ok": True}
-    if leverage is not None and coin_info_check.get("is_listed"):
-        leverage_check = validate_leverage(
-            coin=coin,
-            leverage=leverage,
-            network=network,
-            timeout=timeout,
-        )
-        if not leverage_check["ok"]:
-            issues.append({
-                "code": leverage_check["reason"],
-                "message": f"杠杆不合法: requested={leverage_check['requested']}, max={leverage_check['max_allowed']}",
-                "detail": leverage_check,
-            })
+    if not is_adding and coin_info.get("is_listed"):
+        max_leverage = coin_info.get("max_leverage")
+        if max_leverage is not None and leverage > max_leverage:
+            leverage_to_use = float(max_leverage)
+            corrections.append(f"杠杆已从 {leverage}x 降为 {leverage_to_use}x（该币种最大 {max_leverage}x）")
+            # 杠杆降低后，只有双输入时才换算；单输入保留原始值不动
+            if user_provided_both and mark_price and mark_price > 0:
+                if coin_size_val is not None:
+                    usdc_margin_val = round(coin_size_val * mark_price / leverage_to_use, 6)
+                elif usdc_margin_val is not None:
+                    coin_size_val = round(usdc_margin_val * leverage_to_use / mark_price, 6)
 
-    open_orders_check = get_user_open_orders(
-        address=address,
-        coin=coin,
-        network=network,
-        timeout=timeout,
+    # 5. 未成交主单检查（TPSL 单不算）
+    open_orders_result = get_user_open_orders(
+        address=address, coin=coin, network=network, timeout=timeout,
     )
+    main_orders = [
+        o for o in open_orders_result.get("orders", [])
+        if not _is_tpsl_order(o) and not o.get("reduceOnly", False)
+    ]
+    if main_orders:
+        issues.append({
+            "code": "has_main_orders",
+            "message": f"有 {len(main_orders)} 个未成交主单，请先撤销",
+        })
 
-    entry_price_check = {"ok": True}
-    if order_type == "limit" and entry_price is not None:
-        entry_price_check = evaluate_entry_price(
-            coin=coin,
-            side=side,
-            target_price=entry_price,
-            order_type=order_type,
-            network=network,
-            timeout=timeout,
-        )
-        if not entry_price_check["ok"]:
-            issues.append({
-                "code": "price_unavailable",
-                "message": "无法获取市场价格",
-                "detail": entry_price_check,
-            })
-        else:
-            if not entry_price_check["direction_ok_for_limit"]:
-                issues.append({
-                    "code": "limit_price_direction_unusual",
-                    "message": "限价方向与常见开仓方向不一致，可能会立即成交或长期不成交",
-                    "detail": entry_price_check,
-                })
-            if entry_price_check["deviation_warn"]:
-                issues.append({
-                    "code": "entry_price_far_from_market",
-                    "message": f"目标价与当前市场价偏差 {entry_price_check['deviation_ratio']:.2%}",
-                    "detail": entry_price_check,
-                })
-
-    if normalized["side"] is None:
-        follow_up_parts.append("请确认方向：long 还是 short？")
-    if normalized["order_type"] is None:
-        follow_up_parts.append("请确认订单类型：market 还是 limit？")
-    elif normalized["order_type"] == "limit" and normalized["entry_price"] is None:
-        follow_up_parts.append("限价单请补充 entry_price")
+    # 6. 限价单价格校验
+    if order_type == "limit" and entry_price is not None and mark_price:
+        deviation = abs(entry_price - mark_price) / mark_price
+        if deviation > 0.03:
+            corrections.append(f"限价 {entry_price} 与市场价偏差 {deviation:.1%}，请确认价格")
 
     return {
         "ok": len(issues) == 0,
-        "missing_fields": intent_result["missing_fields"],
-        "follow_up_question": " ".join(follow_up_parts),
+        "is_adding": is_adding,
+        "leverage_to_use": leverage_to_use,
+        "coin_size": coin_size_val,
+        "usdc_margin": usdc_margin_val,
+        "corrections": corrections,
+        "follow_up_question": "",
         "issues": issues,
-        "checks": {
-            "intent": intent_result,
-            "balance": balance_check,
-            "position": position_check,
-            "market": coin_info_check,
-            "leverage": leverage_check,
-            "open_orders": open_orders_check,
-            "entry_price": entry_price_check,
-        },
-        "normalized_intent": normalized,
     }
 
 
@@ -628,27 +611,24 @@ def check_can_open(
     address: str,
     coin: str | None = None,
     side: Side | None = None,
-    size: float | None = None,
+    usdc_margin: float | None = None,
+    coin_size: float | None = None,
     leverage: float | None = None,
     order_type: OrderType = "market",
     entry_price: float | None = None,
     network: Network = "mainnet",
     timeout: float | None = None,
-    intent: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """检查是否可以开仓"""
-    if intent is None:
-        intent = {
-            "coin": coin,
-            "side": side,
-            "size": size,
-            "leverage": leverage,
-            "order_type": order_type,
-            "entry_price": entry_price,
-        }
     return _check_can_open_with_intent(
-        intent=intent,
         address=address,
+        coin=coin,
+        side=side,
+        usdc_margin=usdc_margin,
+        coin_size=coin_size,
+        leverage=leverage,
+        order_type=order_type,
+        entry_price=entry_price,
         network=network,
         timeout=timeout,
     )

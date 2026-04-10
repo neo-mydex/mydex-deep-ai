@@ -9,10 +9,10 @@
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | coin | str | 币种名称，如 "BTC"、"ETH" |
-| leverage | float | 杠杆倍数，如 20 表示 20x |
+| leverage | float | 杠杆倍数（必须用 check_can_open 返回的 corrected_leverage） |
 | usdc_size | float | 投入的 USDC 数量，如 1000 表示 1000 USDC |
 | side | Literal["long", "short"] | "long"=做多，"short"=做空 |
-| action_mode | Literal["open", "add"] | 默认 "open" |
+| is_add | bool | false=开新仓，true=补仓（由 check_can_open 推断） |
 | margin_mode | Literal["cross", "isolated"] | 默认 "cross"（全仓） |
 | order_type | Literal["market", "limit"] | 默认 "market"（市价） |
 | entry_price | float \| None | 限价单入场价格（仅限价单需填） |
@@ -23,16 +23,16 @@
 | mark_price | float \| None | 当前标记价格（用于计算仓位大小） |
 | source_text | str | 用户原始表达，不影响逻辑 |
 
-## action_mode
+## is_add
 
-- **`action_mode="open"`（默认）**：新开仓
+- **`is_add=false`（默认）**：新开仓
   - `execution_plan` 包含两个 step：
     1. `UPDATE_LEVERAGE`：设置杠杆和全仓/逐仓
     2. `OPEN_ORDER`：下单
 
-- **`action_mode="add"`**：补仓（往已有仓位追加保证金）
+- **`is_add=true`**：补仓（往已有仓位追加保证金）
   - `execution_plan` 只有一个 step：
-    1. `OPEN_ORDER`：追加保证金，不调杠杆
+    1. `OPEN_ORDER`：追加保证金，不调杠杆（因为仓位已用同一杠杆）
 
 ## tp / tp_ratio 互斥规则
 
@@ -84,7 +84,7 @@ tp=3450, sl=3720, mark_price=3650
 
 **补仓：**
 ```
-action_mode="add", coin="BTC", usdc_size=100
+is_add=true, coin="BTC", leverage=10, usdc_size=100, mark_price=71000
 ```
 
 **用比例止盈止损：**
