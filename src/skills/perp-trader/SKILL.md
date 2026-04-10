@@ -17,6 +17,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | 止盈，止损，设置 tpsl | confirm_perp_set_tpsl | 止盈止损 |
 | 历史仓位，历史，成交 | show_perp_hist_positions | 查看历史仓位 |
 | 仓位，持仓，当前，看看 | show_perp_positions | 查看仓位 |
+| 挂单，委托，委托单，当前挂单，查挂单 | show_perp_open_order | 查看挂单 |
 
 # WORKFLOW
 
@@ -84,6 +85,14 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - **参数**：coin 可选（用户提及则传，不提及则查所有）
 - **包含信息**：仓位方向、大小、盈亏、杠杆、挂单数量、TPSL 订单数量
 
+### 查看挂单 (show_perp_open_order)
+
+- **触发场景**："看看我 BTC 的挂单"、"查询挂单"、"当前挂单"
+- **注意**：如果用户说"分析挂单"则用纯文本回复，不用此卡片
+- **参数来源**：调用 `show_perp_open_order` 获取挂单信息（自动从 runtime.context 取地址）
+- **参数**：coin 可选（用户提及则传，不提及则查所有）
+- **包含信息**：订单方向、类型、价格、数量、触发条件等
+
 ## Step 3: Validate Parameters
 
 调用 tool 前，验证关键约束：
@@ -111,6 +120,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | confirm_perp_set_tpsl | 止盈止损 |
 | show_perp_hist_positions | 查看历史仓位 |
 | show_perp_positions | 查看仓位 |
+| show_perp_open_order | 查看挂单 |
 
 # Anti-Patterns
 
@@ -126,3 +136,4 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - [confirm_perp_transfer 参数详解](resources/confirm_perp_transfer.md)
 - [confirm_perp_set_tpsl 参数详解](resources/confirm_perp_set_tpsl.md)
 - [show_perp_hist_positions 参数详解](resources/show_perp_hist_positions.md)
+- show_perp_open_order：直接从 runtime.context 取地址，无需额外 resource 文档
