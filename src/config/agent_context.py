@@ -1,9 +1,15 @@
 import os
+from typing import Literal
+
 from pydantic import BaseModel, Field
 from src.services.privy import get_user_profile, user_get_userid_impl
 
 
 class ChatContext(BaseModel):
+    interact_mode: Literal["frontend", "webapi", "cli"] = Field(
+        default="frontend",
+        description="交互模式：frontend（前端 confirm card）、webapi（API 摘要）、cli（终端富文本）",
+    )
     user_id: str = Field(default="guest", description="登录用户 id；游客固定为 guest")
     is_expired: bool = Field(default=False, description="JWT 是否过期")
     evm_address: str = Field(default="", description="用户 EVM 链钱包地址（ETH、Base、BSC、ARB、Polygon 等）")
