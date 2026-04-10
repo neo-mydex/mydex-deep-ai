@@ -10,8 +10,9 @@ from .confirm_perp_transfer import confirm_perp_transfer
 from .confirm_perp_open_order import confirm_perp_open_order
 from .confirm_perp_close_position import confirm_perp_close_position
 
+from .show_perp_hist_positions import show_perp_hist_positions
+
 # stubs（尚未实现，不加入 ALL_TOOLS）
-from .action_view_hist_position import view_hist_position
 from .action_view_open_order import view_open_order
 from .action_cancel_open_order import cancel_open_order
 
@@ -21,7 +22,7 @@ ALL_TOOLS = [
     confirm_perp_set_tpsl,
     show_perp_positions,
     confirm_perp_transfer,
-    view_hist_position,
+    show_perp_hist_positions,
     view_open_order,
     cancel_open_order,
 ]

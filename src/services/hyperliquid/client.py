@@ -1,7 +1,7 @@
 """
-Hyperliquid 基础信息模块
+Hyperliquid SDK 客户端封装
 
-提供通用的 network 配置和 Info 实例构建函数
+处理与 Hyperliquid 链下 API 的通信（只读 Info 接口）
 """
 
 from typing import Literal
@@ -124,3 +124,17 @@ def query_order_by_oid(
     """根据 oid 查询单个订单详情（Hyperliquid query_order_by_oid）"""
     info = _build_info(network, timeout=timeout)
     return info.query_order_by_oid(user=address, oid=oid)
+
+
+def historical_orders(
+    address: str,
+    network: Network = "mainnet",
+    timeout: float | None = None,
+) -> list[dict]:
+    """获取用户历史订单（Hyperliquid historicalOrders）
+
+    返回最近最多 2000 条历史订单，包含完整订单详情（entryPx、leverage、orderType 等）。
+    """
+    info = _build_info(network, timeout=timeout)
+    result = info.historical_orders(user=address)
+    return result if isinstance(result, list) else []

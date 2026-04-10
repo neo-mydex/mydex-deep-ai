@@ -2,33 +2,13 @@
 Hyperliquid 永续合约服务层
 
 提供纯业务逻辑，不含 @tool 装饰器。
+导出 service 层的业务函数供 agent tools 使用。
 """
 
-from .info import (
-    Network,
-    _build_info,
-    get_all_mids,
-    get_meta,
-    get_meta_and_asset_ctxs,
-    user_state,
-    open_orders,
-    frontend_open_orders,
-    user_fills_by_time,
-    query_order_by_oid,
-)
+from dotenv import load_dotenv
+load_dotenv()
 
-from .normalize import (
-    Side,
-    OrderType,
-    normalize_side,
-    normalize_order_type,
-    normalize_coin,
-    normalize_leverage,
-    normalize_size,
-    normalize_intent,
-)
-
-from .cli import (
+from .service import (
     get_perp_market_info,
     is_perp_listed,
     get_market_price,
@@ -44,37 +24,32 @@ from .cli import (
     check_can_close,
     get_user_fills_by_time,
     get_order_detail_by_oid,
+    get_historical_orders,
+)
+
+from .normalize import (
+    Side,
+    OrderType,
+    normalize_side,
+    normalize_order_type,
+    normalize_coin,
+    normalize_leverage,
+    normalize_size,
+    normalize_intent,
 )
 
 __all__ = [
-    # info
-    "Network",
-    "_build_info",
-    "get_all_mids",
-    "get_meta",
-    "get_meta_and_asset_ctxs",
-    "user_state",
-    "open_orders",
-    "frontend_open_orders",
-    "user_fills_by_time",
-    "query_order_by_oid",
-    # normalize
-    "Side",
-    "OrderType",
-    "normalize_side",
-    "normalize_order_type",
-    "normalize_coin",
-    "normalize_leverage",
-    "normalize_size",
-    "normalize_intent",
-    # cli
+    # market
     "get_perp_market_info",
     "is_perp_listed",
     "get_market_price",
     "get_coin_info",
+    # account
     "get_account_balance",
+    # positions
     "get_user_positions",
     "get_user_position",
+    # orders
     "get_user_open_orders",
     "_is_tpsl_order",
     # checks
@@ -85,4 +60,14 @@ __all__ = [
     # historical
     "get_user_fills_by_time",
     "get_order_detail_by_oid",
+    "get_historical_orders",
+    # normalize
+    "Side",
+    "OrderType",
+    "normalize_side",
+    "normalize_order_type",
+    "normalize_coin",
+    "normalize_leverage",
+    "normalize_size",
+    "normalize_intent",
 ]

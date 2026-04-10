@@ -5,7 +5,7 @@
 from typing import Literal
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
-from src.services.hyperliquid.cli import get_user_positions
+from src.services.hyperliquid import get_user_positions
 
 Network = Literal["mainnet", "testnet"]
 Side = Literal["long", "short", "flat"]

@@ -88,7 +88,7 @@ uv run python -m src.services.coingecko.cli --action trending
 ### Hyperliquid Service
 
 ```bash
-uv run python -m src.services.hyperliquid.cli_main <子命令> [参数]
+uv run python -m src.services.hyperliquid.cli <子命令> [参数]
 ```
 
 子命令：
@@ -104,13 +104,13 @@ uv run python -m src.services.hyperliquid.cli_main <子命令> [参数]
 
 ```bash
 # 查询 BTC 市场价格
-uv run python -m src.services.hyperliquid.cli_main get_market --action price --coin BTC
+uv run python -m src.services.hyperliquid.cli get_market --action price --coin BTC
 
 # 查询用户所有仓位
-uv run python -m src.services.hyperliquid.cli_main get_positions --action all --address 0x1234...
+uv run python -m src.services.hyperliquid.cli get_positions --action all --address 0x1234...
 
 # 查询账户余额
-uv run python -m src.services.hyperliquid.cli_main get_balance --address 0x1234...
+uv run python -m src.services.hyperliquid.cli get_balance --address 0x1234...
 ```
 
 ### Alchemy Service

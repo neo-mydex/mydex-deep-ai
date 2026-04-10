@@ -237,12 +237,12 @@ class TestGetUserOpenOrders:
         assert result["orders"][0]["coin"] == "BTC"
 
 
-class TestCliMainImport:
+class TestCliImport:
     """测试 CLI 入口可以被导入"""
 
-    def test_cli_main_can_be_imported(self):
-        """验证 cli_main 模块可以被正常导入"""
-        from src.services.hyperliquid import cli_main
+    def test_cli_can_be_imported(self):
+        """验证 cli 模块可以被正常导入"""
+        from src.services.hyperliquid import cli
 
-        assert hasattr(cli_main, "main")
-        assert callable(cli_main.main)
+        assert hasattr(cli, "main")
+        assert callable(cli.main)

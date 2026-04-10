@@ -5,7 +5,7 @@
 from typing import Any, Literal
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
-from src.services.hyperliquid.cli import check_can_close as service_check_can_close
+from src.services.hyperliquid import check_can_close as service_check_can_close
 
 Network = Literal["mainnet", "testnet"]
 Side = Literal["long", "short", "flat"]

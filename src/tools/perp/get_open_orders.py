@@ -5,7 +5,7 @@
 from typing import Literal
 from langchain_core.tools import tool
 from pydantic import BaseModel, ConfigDict, Field
-from src.services.hyperliquid.cli import get_user_open_orders
+from src.services.hyperliquid import get_user_open_orders
 
 Network = Literal["mainnet", "testnet"]
 

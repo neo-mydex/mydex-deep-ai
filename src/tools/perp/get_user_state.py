@@ -5,7 +5,7 @@
 from typing import Literal
 from langchain_core.tools import tool
 from pydantic import BaseModel
-from src.services.hyperliquid.cli import get_account_balance
+from src.services.hyperliquid import get_account_balance
 
 Network = Literal["mainnet", "testnet"]
 
