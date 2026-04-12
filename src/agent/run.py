@@ -10,9 +10,10 @@ load_dotenv()
 from deepagents import create_deep_agent
 from src.config.agent_backend import BACKEND, SKILL_DIR
 from src.config.agent_context import ChatContext
-from src.config.agent_llms import GPT_54,GEMINI_3F
+from src.config.agent_llms import GPT_54, GEMINI_3F
 from src.config.agent_prompts import SYSTEM_PROMPT
 from src.config.agent_tools import AGENT_TOOLS
+from src.middleware import AGENT_MIDDLEWARES
 
 
 agent = create_deep_agent(
@@ -21,6 +22,7 @@ agent = create_deep_agent(
     backend=BACKEND,
     skills=[SKILL_DIR],
     tools=AGENT_TOOLS,
+    middleware=AGENT_MIDDLEWARES,
     context_schema=ChatContext,
 )
 
@@ -31,7 +33,7 @@ if __name__ == "__main__":
             "messages": [
                 {
                     "role": "user",
-                    "content": "你有什么skill？",
+                    "content": "你有哪些工具？",
                 }
             ]
         },

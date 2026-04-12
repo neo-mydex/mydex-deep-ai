@@ -59,7 +59,7 @@ show_port_listeners() {
 }
 
 start_server() {
-  uv run --with "langgraph-cli[inmem]" langgraph dev --config langgraph.json --port "${PORT}" &
+  uv run --with "langgraph-cli[inmem]" langgraph dev --config langgraph.json --no-reload --port "${PORT}" &
   LG_PID=$!
 }
 

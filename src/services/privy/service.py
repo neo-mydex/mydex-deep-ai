@@ -21,9 +21,51 @@ class UserIdResponse(BaseModel):
     is_expired: bool
 
 
+def decode_jwt_payload(jwt: str) -> dict[str, Any]:
+    """解析 JWT payload（纯本地，不验证签名）。
+
+    Returns:
+        {"sub": str, "exp": int, ...}
+    """
+    parts = jwt.split(".")
+    if len(parts) != 3:
+        raise ValueError("Invalid JWT format")
+
+    payload_b64 = parts[1]
+    padding = 4 - (len(payload_b64) % 4)
+    if padding != 4:
+        payload_b64 += "=" * padding
+
+    payload_bytes = base64.urlsafe_b64decode(payload_b64.encode("utf-8"))
+    return json.loads(payload_bytes.decode("utf-8"))
+
+
+def resolve_wallet_addresses(jwt: str) -> dict:
+    """从 JWT 调用后端 API 解析钱包地址（EVM + Solana）。
+
+    Returns:
+        {"evm_address": str, "sol_address": str}
+    解析失败时返回空字符串。
+    """
+    try:
+        resp = get_json(AI_API_USERS_URL, {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "Authorization": f"Bearer {jwt}",
+            "user-agent": "mydex-deep/1.0",
+        })
+        data = resp.get("data", {})
+        return {
+            "evm_address": str(data.get("evm_address") or ""),
+            "sol_address": str(data.get("sol_address") or ""),
+        }
+    except Exception:
+        return {"evm_address": "", "sol_address": ""}
+
+
 def user_get_userid_impl(jwt: str) -> dict:
     """解析 JWT 获取用户 ID 和过期时间（纯函数）"""
-    payload = _decode_jwt_payload(jwt)
+    payload = decode_jwt_payload(jwt)
 
     user_id = payload.get("sub")
     if not isinstance(user_id, str) or not user_id:
@@ -69,7 +111,7 @@ def get_user_profile(jwt: str) -> dict[str, Any]:
     """
     # 1. 解析 JWT 获取 user_id 和过期时间
     try:
-        payload = _decode_jwt_payload(jwt)
+        payload = decode_jwt_payload(jwt)
         user_id = payload.get("sub")
         if not isinstance(user_id, str) or not user_id:
             return _error_result("No valid user id in JWT 'sub' claim")
@@ -111,21 +153,6 @@ def get_user_profile(jwt: str) -> dict[str, Any]:
         "is_expired": is_expired,
         "error": None,
     }
-
-
-def _decode_jwt_payload(jwt: str) -> dict[str, Any]:
-    """解析 JWT payload（纯本地，不验证签名）"""
-    parts = jwt.split(".")
-    if len(parts) != 3:
-        raise ValueError("Invalid JWT format")
-
-    payload_b64 = parts[1]
-    padding = 4 - (len(payload_b64) % 4)
-    if padding != 4:
-        payload_b64 += "=" * padding
-
-    payload_bytes = base64.urlsafe_b64decode(payload_b64.encode("utf-8"))
-    return json.loads(payload_bytes.decode("utf-8"))
 
 
 def _error_result(message: str) -> dict[str, Any]:

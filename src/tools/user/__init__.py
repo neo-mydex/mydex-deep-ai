@@ -5,10 +5,10 @@
 """
 
 from .get_wallet_address import user_get_wallet_address
-from .get_onchain_assets import wallet_get_assets, wallet_get_sol_assets
+from .get_onchain_assets import user_get_evm_assets, user_get_sol_assets
 
 ALL_TOOLS = [
     user_get_wallet_address,
-    wallet_get_assets,
-    wallet_get_sol_assets,
+    user_get_evm_assets,
+    user_get_sol_assets,
 ]

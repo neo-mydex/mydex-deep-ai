@@ -19,7 +19,7 @@ class Asset(BaseModel):
 
 
 class WalletPortfolioResponse(BaseModel):
-    """wallet_get_assets 返回格式"""
+    """user_get_evm_assets 返回格式"""
     ok: bool
     address: str
     total_value_usd: float
@@ -37,7 +37,7 @@ class SolAsset(BaseModel):
 
 
 class SolAssetsResponse(BaseModel):
-    """wallet_get_sol_assets 返回格式"""
+    """user_get_sol_assets 返回格式"""
     ok: bool
     address: str
     total_value_usd: float
@@ -56,7 +56,7 @@ ALL_EVM_NETWORKS = ["eth", "base", "arb", "op", "polygon", "bnb", "monad", "ink"
 # impl 纯函数
 # =============================================================================
 
-def wallet_get_assets_impl(
+def user_get_evm_assets_impl(
     evm_address: str,
     networks: list[str] | None = None,
     with_prices: bool = True,
@@ -90,7 +90,7 @@ def wallet_get_assets_impl(
     ).model_dump()
 
 
-def wallet_get_sol_assets_impl(sol_address: str) -> dict:
+def user_get_sol_assets_impl(sol_address: str) -> dict:
     """查询 Solana 钱包资产（纯函数，可直接测试）"""
     from src.services.alchemy.solana import get_solana_portfolio
 
@@ -119,7 +119,7 @@ def wallet_get_sol_assets_impl(sol_address: str) -> dict:
 # =============================================================================
 
 @tool
-def wallet_get_assets(
+def user_get_evm_assets(
     evm_address: str,
     networks: list[str] | None = None,
     with_prices: bool = True,
@@ -140,7 +140,7 @@ def wallet_get_assets(
             total_value_usd=0,
             error="evm_address 不能为空",
         ).model_dump()
-    return wallet_get_assets_impl(
+    return user_get_evm_assets_impl(
         evm_address=evm_address,
         networks=networks,
         with_prices=with_prices,
@@ -149,7 +149,7 @@ def wallet_get_assets(
 
 
 @tool
-def wallet_get_sol_assets(sol_address: str) -> SolAssetsResponse:
+def user_get_sol_assets(sol_address: str) -> SolAssetsResponse:
     """查询 Solana 钱包的所有代币资产。
 
     参数:
@@ -161,7 +161,7 @@ def wallet_get_sol_assets(sol_address: str) -> SolAssetsResponse:
             total_value_usd=0,
             error="sol_address 不能为空",
         ).model_dump()
-    return wallet_get_sol_assets_impl(sol_address)
+    return user_get_sol_assets_impl(sol_address)
 
 
 # =============================================================================
@@ -172,12 +172,12 @@ if __name__ == "__main__":
     from rich import print
 
     evm_addr = "0x269488c0F8D595CF47aAA91AC6Ef896f9F63cc9E"
-    print("=== wallet_get_assets: 全量 EVM 9 条链 ===")
-    print(wallet_get_assets_impl(evm_address=evm_addr))
+    print("=== user_get_evm_assets: 全量 EVM 9 条链 ===")
+    print(user_get_evm_assets_impl(evm_address=evm_addr))
     print()
-    print("=== wallet_get_assets: 仅 eth/base ===")
-    print(wallet_get_assets_impl(evm_address=evm_addr, networks=["eth", "base"]))
+    print("=== user_get_evm_assets: 仅 eth/base ===")
+    print(user_get_evm_assets_impl(evm_address=evm_addr, networks=["eth", "base"]))
     print()
     sol_addr = "GdV8W4x3WRsRM4Sdouh52Lxktfn1XyuaS6ETSvi8xssq"
-    print("=== wallet_get_sol_assets: Solana ===")
-    print(wallet_get_sol_assets_impl(sol_addr))
+    print("=== user_get_sol_assets: Solana ===")
+    print(user_get_sol_assets_impl(sol_addr))
