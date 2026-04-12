@@ -82,7 +82,7 @@ def _build_close_item(item: CloseItem) -> ClosePositionIntent:
     return ClosePositionIntent.model_validate(intent_dict)
 
 
-def confirm_perp_close_position_impl(
+def confirm_perp_close_positions_impl(
     closes: list[CloseItem],
     source_text: str = "",
 ) -> dict:
@@ -101,7 +101,7 @@ def confirm_perp_close_position_impl(
 
 
 @tool
-def confirm_perp_close_position(
+def confirm_perp_close_positions(
     closes: list[CloseItem],
     source_text: str = "",
 ) -> dict:
@@ -125,7 +125,7 @@ def confirm_perp_close_position(
     - "把 BTC 和 ETH 都平一半" → closes=[{...BTC...}, {...ETH...}]
     - "平 0.5 个 BTC" → closes=[{"coin": "BTC", "position_side": "long", "position_size": 1.5, "close_size": 0.5}]
     """
-    return confirm_perp_close_position_impl(
+    return confirm_perp_close_positions_impl(
         closes=closes,
         source_text=source_text,
     )
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     # uv run python -m src.tools.action.confirm_perp_close_position
 
     print("=== 全平单个 ===")
-    print(confirm_perp_close_position_impl(
+    print(confirm_perp_close_positions_impl(
         closes=[CloseItem(
             coin="BTC",
             position_side="long",
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     ))
 
     print("\n=== 部分平 50% ===")
-    print(confirm_perp_close_position_impl(
+    print(confirm_perp_close_positions_impl(
         closes=[CloseItem(
             coin="ETH",
             position_side="short",
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     ))
 
     print("\n=== 仅 close_size ===")
-    print(confirm_perp_close_position_impl(
+    print(confirm_perp_close_positions_impl(
         closes=[CloseItem(
             coin="BTC",
             position_side="long",
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     ))
 
     print("\n=== 批量平仓 ===")
-    print(confirm_perp_close_position_impl(
+    print(confirm_perp_close_positions_impl(
         closes=[
             CloseItem(coin="BTC", position_side="long", position_size=1.5, close_ratio=0.5, mark_price=68720.2),
             CloseItem(coin="ETH", position_side="short", position_size=1.0, mark_price=3650.0),

@@ -4,7 +4,6 @@
 按 hyperliquid交易卡片需求文档.md 5.10 实现
 """
 
-from langchain.tools import ToolRuntime
 from langchain_core.tools import tool
 from pydantic import BaseModel
 from typing import Literal
@@ -79,7 +78,7 @@ def _resolve_direction(order: dict, coin: str, positions_by_coin: dict) -> Liter
         return "long" if side == "B" else "short"
 
 
-def show_perp_open_order_impl(
+def show_perp_open_orders_impl(
     address: str,
     coin: str | None = None,
     source_text: str = "",
@@ -157,8 +156,8 @@ def show_perp_open_order_impl(
 # =============================================================================
 
 @tool
-def show_perp_open_order(
-    runtime: ToolRuntime,
+def show_perp_open_orders(
+    address: str,
     coin: str | None = None,
     source_text: str = "",
 ) -> dict:
@@ -169,7 +168,7 @@ def show_perp_open_order(
     注意：如果用户说"分析挂单"则用纯文本回复，不用此卡片。
 
     参数:
-        runtime: Tool运行时，从 context 自动获取钱包地址，无需传入
+        address: 用户钱包地址
         coin: 币种名称，如 "BTC"、"ETH"，不传则返回所有挂单
         source_text: 用户原始表达
 
@@ -177,15 +176,8 @@ def show_perp_open_order(
     - "看看我 BTC 的挂单" → BTC 挂单列表
     - "查一下挂单" → 所有挂单
     """
-    ctx = runtime.context
-    if not ctx or not ctx.evm_address:
-        return ShowOpenOrdersAction.model_validate({
-            "action": "VIEW_OPEN_ORDER",
-            "execution_plan": [],
-            "meta": {"source_text": source_text, "error": "无法获取用户钱包地址"},
-        }).model_dump()
-    return show_perp_open_order_impl(
-        address=ctx.evm_address,
+    return show_perp_open_orders_impl(
+        address=address,
         coin=coin,
         source_text=source_text,
     )
@@ -203,14 +195,14 @@ if __name__ == "__main__":
     EVM_ADDRESS = os.environ["EVM_ADDRESS"]
 
     print("=== 查看单个币种挂单 ===")
-    print(show_perp_open_order_impl(
+    print(show_perp_open_orders_impl(
         address=EVM_ADDRESS,
         coin="BTC",
         source_text="看看我 BTC 的挂单",
     ))
     print()
     print("=== 查看所有挂单 ===")
-    print(show_perp_open_order_impl(
+    print(show_perp_open_orders_impl(
         address=EVM_ADDRESS,
         source_text="查一下挂单",
     ))

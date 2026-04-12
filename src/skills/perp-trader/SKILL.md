@@ -12,12 +12,12 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | 意图关键词 | Tool | 说明 |
 |-----------|------|------|
 | 做多，做空，开仓，做多 BTC | check_can_open → confirm_perp_open_order | 开仓（先校验可行性） |
-| 平仓，平多头，平空头 | check_can_close → confirm_perp_close_position | 平仓（先校验可行性） |
+| 平仓，平多头，平空头 | check_can_close → confirm_perp_close_positions | 平仓（先校验可行性） |
 | 转入，转出，存款，提款，往合约 | confirm_perp_transfer | 资金划转 |
 | 止盈，止损，设置 tpsl | confirm_perp_set_tpsl | 止盈止损 |
 | 历史仓位，历史，成交 | show_perp_hist_positions | 查看历史仓位 |
 | 仓位，持仓，当前，看看 | show_perp_positions | 查看仓位 |
-| 挂单，委托，委托单，当前挂单，查挂单 | show_perp_open_order | 查看挂单 |
+| 挂单，委托，委托单，当前挂单，查挂单 | show_perp_open_orders | 查看挂单 |
 | 取消挂单，撤单，删除委托 | perp_check_can_cancel → confirm_perp_cancel_open_orders | 取消挂单（先检查可行性） |
 
 # WORKFLOW
@@ -44,7 +44,7 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - **可选参数**：tp/sl（价格）、tp_ratio/sl_ratio（比例）、order_type、entry_price、margin_mode
 - **参数不全时**：主动追问用户，不自行查询
 
-### 平仓 (confirm_perp_close_position)
+### 平仓 (confirm_perp_close_positions)
 
 - **【强制】前置检查**：必须先调用 `perp_check_can_close` 校验可行性
   - 若 `ok=false`：根据返回的 `issues` 和 `follow_up_question` 告知用户问题，**禁止继续**
@@ -52,9 +52,9 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
     - 从 `matching_positions` 列表中取各 coin 的仓位信息
     - 用每条的 `coin`、`side`、`size`、`close_ratio`、`close_size`、`mark_price` 填充 `closes` 的各 `CloseItem`
     - 检查 `corrections` 中的警告，告知用户但不 block
-  - **禁止跳过 check_can_close 直接调用 confirm_perp_close_position**
+  - **禁止跳过 check_can_close 直接调用 confirm_perp_close_positions**
 - **约束**：无，每轮可批量平多个 coin
-- **参数来源**：参考 [confirm_perp_close_position 参数详解](resources/confirm_perp_close_position.md)；前置检查参考 [check_can_close 参数详解](resources/check_can_close.md)
+- **参数来源**：参考 [confirm_perp_close_positions 参数详解](resources/confirm_perp_close_positions.md)；前置检查参考 [check_can_close 参数详解](resources/check_can_close.md)
 - **必填参数**：closes（list，含 coin、position_side、position_size）
 - **参数不全时**：主动追问用户，不自行查询
 
@@ -90,11 +90,11 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - **参数**：coin 可选（用户提及则传，不提及则查所有）
 - **包含信息**：仓位方向、大小、盈亏、杠杆、挂单数量、TPSL 订单数量
 
-### 查看挂单 (show_perp_open_order)
+### 查看挂单 (show_perp_open_orders)
 
 - **触发场景**："看看我 BTC 的挂单"、"查询挂单"、"当前挂单"
 - **注意**：如果用户说"分析挂单"则用纯文本回复，不用此卡片
-- **参数来源**：调用 `show_perp_open_order` 获取挂单信息（自动从 runtime.context 取地址）
+- **参数来源**：调用 `show_perp_open_orders(address=xxx, coin=xxx)获取挂单信息
 - **参数**：coin 可选（用户提及则传，不提及则查所有）
 - **包含信息**：订单方向、类型、价格、数量、触发条件等
 
@@ -132,12 +132,12 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 | confirm_perp_open_order | 开仓（做多/做空） |
 | check_can_close | 平仓前可行性校验（仓位、主单挂单、强平距离等） |
 | check_can_cancel | 取消挂单前可行性校验（订单是否存在） |
-| confirm_perp_close_position | 平仓（支持批量平多个 coin） |
+| confirm_perp_close_positions | 平仓（支持批量平多个 coin） |
 | confirm_perp_transfer | 资金划转（PERPS_DEPOSIT / PERPS_WITHDRAW） |
 | confirm_perp_set_tpsl | 止盈止损 |
 | show_perp_hist_positions | 查看历史仓位 |
 | show_perp_positions | 查看仓位 |
-| show_perp_open_order | 查看挂单 |
+| show_perp_open_orders | 查看挂单 |
 | confirm_perp_cancel_open_orders | 取消挂单 |
 
 # Anti-Patterns
@@ -152,9 +152,9 @@ description: 当 interact_mode=frontend 时，使用 action tools 生成 confirm
 - [check_can_cancel 参数详解](resources/check_can_cancel.md)
 - [check_can_open 参数详解](resources/check_can_open.md)
 - [confirm_perp_open_order 参数详解](resources/confirm_perp_open_order.md)
-- [confirm_perp_close_position 参数详解](resources/confirm_perp_close_position.md)
+- [confirm_perp_close_positions 参数详解](resources/confirm_perp_close_positions.md)
 - [confirm_perp_transfer 参数详解](resources/confirm_perp_transfer.md)
 - [confirm_perp_set_tpsl 参数详解](resources/confirm_perp_set_tpsl.md)
 - [show_perp_hist_positions 参数详解](resources/show_perp_hist_positions.md)
-- show_perp_open_order：直接从 runtime.context 取地址，无需额外 resource 文档
+- [show_perp_open_orderss 参数详解](resources/show_perp_open_orderss.md)
 - [confirm_perp_cancel_open_orders 参数详解](resources/confirm_perp_cancel_open_orders.md)

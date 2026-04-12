@@ -211,7 +211,7 @@ def perp_check_can_close(
     """
     【强制】平仓前必须调用的可行性校验工具。
 
-    ⚠️ 重要：调用 confirm_perp_close_position 之前，必须先调用本工具。
+    ⚠️ 重要：调用 confirm_perp_close_positions 之前，必须先调用本工具。
 
     校验内容（单币模式）：
     - 是否有仓位可以平
