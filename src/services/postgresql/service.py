@@ -39,6 +39,36 @@ async def get_processed_content_by_id(content_id: str) -> dict[str, Any]:
     }
 
 
+async def get_user_info_by_id(user_id: str) -> dict[str, Any]:
+    """按 ID 查询用户画像（ai_user_profiles 表）。
+
+    参数:
+        user_id: 用户 ID
+
+    Returns:
+        {
+            "ok": bool,
+            "data": dict | None,
+            "error": str | None,
+        }
+    """
+    row = await fetchrow(
+        "SELECT * FROM ai_user_profiles WHERE user_id = $1",
+        user_id,
+    )
+    if row is None:
+        return {
+            "ok": False,
+            "data": None,
+            "error": f"ai_user_profiles {user_id} not found",
+        }
+    return {
+        "ok": True,
+        "data": dict(row),
+        "error": None,
+    }
+
+
 if __name__ == "__main__":
     import asyncio
     from rich import print
