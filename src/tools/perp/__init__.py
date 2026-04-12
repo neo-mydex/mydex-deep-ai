@@ -9,6 +9,7 @@ from .get_open_orders import perp_get_open_orders
 from .get_hist_orders import perp_get_hist_orders
 from .check_can_open import perp_check_can_open
 from .check_can_close import perp_check_can_close
+from .check_can_cancel import perp_check_can_cancel
 
 ALL_TOOLS = [
     perp_get_market_price,
@@ -19,4 +20,5 @@ ALL_TOOLS = [
     perp_get_hist_orders,
     perp_check_can_open,
     perp_check_can_close,
+    perp_check_can_cancel,
 ]

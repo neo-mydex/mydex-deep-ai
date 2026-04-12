@@ -12,9 +12,8 @@ from .confirm_perp_close_position import confirm_perp_close_position
 
 from .show_perp_hist_positions import show_perp_hist_positions
 
-# stubs（尚未实现，不加入 ALL_TOOLS）
 from .show_perp_open_orders import show_perp_open_order
-from .action_cancel_open_order import cancel_open_order
+from .confirm_perp_cancel_open_orders import confirm_perp_cancel_open_orders
 
 ALL_TOOLS = [
     confirm_perp_open_order,
@@ -24,5 +23,5 @@ ALL_TOOLS = [
     confirm_perp_transfer,
     show_perp_hist_positions,
     show_perp_open_order,
-    cancel_open_order,
+    confirm_perp_cancel_open_orders,
 ]

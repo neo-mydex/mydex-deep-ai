@@ -114,36 +114,38 @@ class TestToolCheckCanClose:
     """perp_check_can_close tool 层测试"""
 
     def test_tool_accepts_close_size_in_usdc(self):
-        """tool 层支持 close_size_in_usdc 参数"""
+        """tool 层支持 close_size_in_usdc 参数，值在 matching_positions 里"""
         result = perp_check_can_close_impl(
             address="0x0000000000000000000000000000000000000000",
             coin="BTC",
             close_size_in_usdc=5000,
         )
-        assert result["close_size_in_usdc"] == 5000
-        assert result["close_size"] is not None
+        # 单币模式返回 1 条，空仓位时 matching_positions 为空但 ok=False
+        assert result["ok"] is False
+        assert result["matching_positions"] == []
 
     def test_tool_accepts_close_ratio(self):
-        """tool 层支持 close_ratio 参数"""
+        """tool 层支持 close_ratio 参数，值在 matching_positions 里"""
         result = perp_check_can_close_impl(
             address="0x0000000000000000000000000000000000000000",
             coin="BTC",
             close_ratio=0.5,
         )
-        assert result["close_ratio"] == 0.5
-        assert result["close_size"] is not None
+        # 单币模式返回 1 条，空仓位时 matching_positions 为空但 ok=False
+        assert result["ok"] is False
+        assert result["matching_positions"] == []
 
-    def test_response_has_flat_fields(self):
-        """响应为顶层字段，无 position_info"""
+    def test_response_has_matching_positions_structure(self):
+        """响应结构为 ok + matching_positions + corrections + issues"""
         result = perp_check_can_close_impl(
             address="0x0000000000000000000000000000000000000000",
             coin="BTC",
             close_size=0.01,
         )
-        assert "position_info" not in result
-        assert "checks" not in result
+        assert "matching_positions" in result
         assert "corrections" in result
-        assert "has_position" in result
+        assert "issues" in result
+        assert "ok" in result
 
     def test_can_close_input_rejects_multiple_inputs(self):
         """CanCloseInput 拒绝多个输入同时指定"""
@@ -154,23 +156,30 @@ class TestToolCheckCanClose:
                 close_size=0.5,
                 close_size_in_usdc=1000,
             )
-        assert "三选一" in str(exc_info.value)
+        assert "不可同时指定" in str(exc_info.value)
 
-    def test_can_close_input_rejects_zero_inputs(self):
-        """CanCloseInput 拒绝没有任何输入"""
-        with pytest.raises(ValidationError) as exc_info:
-            CanCloseInput(
-                address="0x0000000000000000000000000000000000000000",
-                coin="BTC",
-            )
-        assert "三选一" in str(exc_info.value)
+    def test_can_close_input_defaults_to_full_close(self):
+        """CanCloseInput 不传任何参数时默认 close_ratio=1（全平）"""
+        inp = CanCloseInput(
+            address="0x0000000000000000000000000000000000000000",
+            coin="BTC",
+        )
+        assert inp.close_ratio == 1.0
 
-    def test_can_close_input_rejects_invalid_ratio(self):
-        """CanCloseInput 拒绝不在 (0, 1] 范围的 ratio"""
-        with pytest.raises(ValidationError) as exc_info:
-            CanCloseInput(
-                address="0x0000000000000000000000000000000000000000",
-                coin="BTC",
-                close_ratio=1.5,
-            )
-        assert "范围" in str(exc_info.value)
+    def test_can_close_input_clamps_invalid_ratio(self):
+        """close_ratio 超出 (0, 1] 范围时自动纠正为 1.0，不报错"""
+        # ratio > 1：自动纠正为 1.0
+        inp = CanCloseInput(
+            address="0x0000000000000000000000000000000000000000",
+            coin="BTC",
+            close_ratio=1.5,
+        )
+        assert inp.close_ratio == 1.0
+
+        # ratio <= 0：也自动纠正为 1.0
+        inp2 = CanCloseInput(
+            address="0x0000000000000000000000000000000000000000",
+            coin="BTC",
+            close_ratio=-1,
+        )
+        assert inp2.close_ratio == 1.0
